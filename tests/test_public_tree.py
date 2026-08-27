@@ -1,4 +1,5 @@
 from pathlib import Path
+import subprocess
 import unittest
 
 
@@ -26,21 +27,30 @@ FORBIDDEN_PARTS = {
 
 
 class PublicTreeTest(unittest.TestCase):
-    def test_top_level_is_an_allowed_subset_during_bootstrap(self):
+    @staticmethod
+    def tracked_paths():
+        completed = subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+        )
+        return [Path(raw.decode()) for raw in completed.stdout.split(b"\0") if raw]
+
+    def test_top_level_is_exact(self):
         actual = {path.name for path in ROOT.iterdir() if path.name != ".git"}
-        self.assertTrue(actual <= ALLOWED_TOP)
-        self.assertTrue({".gitignore", "spk", "tests"} <= actual)
+        self.assertEqual(ALLOWED_TOP, actual)
 
     def test_forbidden_private_paths_are_absent(self):
         bad = [
             path
-            for path in ROOT.rglob("*")
+            for path in self.tracked_paths()
             if FORBIDDEN_PARTS.intersection(path.parts)
         ]
         self.assertEqual([], bad)
 
     def test_historical_spk_files_are_absent(self):
-        self.assertEqual([], list(ROOT.rglob("*.spk")))
+        self.assertEqual([], [path for path in self.tracked_paths() if path.suffix == ".spk"])
 
 
 if __name__ == "__main__":
