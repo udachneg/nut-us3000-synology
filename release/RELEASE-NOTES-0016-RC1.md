@@ -1,5 +1,8 @@
 # NUT US3000 2.8.5-0016 RC1
 
+> **Superseded by `v2.8.5-0016-rc2`. Do not install RC1.** RC2 keeps the
+> product name separate from the `Hevtech` maintainer attribution.
+
 This is a pre-release awaiting a fresh package install on a preconfigured DSM
 host. The package itself keeps the internal version `2.8.5-0016`; the
 `v2.8.5-0016-rc1` suffix identifies only this GitHub validation stage.
