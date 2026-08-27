@@ -16,7 +16,7 @@ FETCHER = ROOT / "spk/scripts/fetch-verify-sources.sh"
 SIGNATURE = ROOT / "spk/sources/nut-2.8.5.tar.gz.sig"
 KEYRING = ROOT / "spk/sources/nut-key.gpg"
 RELEASE_MANIFEST = ROOT / "release/SOURCE-COMPONENTS-0016.sha256"
-RELEASE_NOTES = ROOT / "release/RELEASE-NOTES-0016-RC1.md"
+RELEASE_NOTES = ROOT / "release/RELEASE-NOTES-0016-RC2.md"
 CANONICAL_SPK = ROOT / "artifacts/nut-us3000_epyc7002-7.2_2.8.5-0016.spk"
 
 NUT_BYTES = b"fixture NUT 2.8.5 source\n"
@@ -38,7 +38,7 @@ EXPECTED_MANIFEST = {
 
 EXPECTED_RELEASE_COMPONENTS = {
     "artifacts/nut-us3000_epyc7002-7.2_2.8.5-0016.spk":
-        "0b9b021357e8168b99ddb6e6fb33010c976191b2b3631133d23a5753989c7307",
+        "8b288b035aac4fee7ac85850892b7e6064fb0029f38cfb040ce8443858f7e2b9",
     "artifacts/nut-2.8.5.tar.gz":
         "18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1",
     "spk/sources/nut-2.8.5.tar.gz.sig":
@@ -93,7 +93,7 @@ class PublicReleaseManifestTest(unittest.TestCase):
         self.assertTrue(RELEASE_NOTES.is_file())
         notes = " ".join(RELEASE_NOTES.read_text().lower().split())
         for required in (
-            "v2.8.5-0016-rc1", "pre-release", "fresh package install",
+            "v2.8.5-0016-rc2", "pre-release", "fresh package install",
             "preconfigured dsm host",
         ):
             self.assertIn(required, notes)
@@ -105,7 +105,7 @@ class PublicReleaseManifestTest(unittest.TestCase):
             self.assertIsNotNone(info)
             metadata = info.read().decode()
         self.assertIn('version="2.8.5-0016"', metadata)
-        self.assertNotIn('version="2.8.5-0016-rc1"', metadata)
+        self.assertNotIn('version="2.8.5-0016-rc2"', metadata)
 
 
 class PublicSourceFetcherTest(unittest.TestCase):
