@@ -125,7 +125,7 @@ class SpksrcArtifactTest(unittest.TestCase):
             'description="Native USB driver and host-local NUT 2.8.5 endpoint for UGREEN US3000."\n\n'
             'description_rus="Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000."\n'
             f'arch="{arch}"\n'
-            'maintainer="HEVTECH"\n'
+            'maintainer="Hevtech"\n'
             'maintainer_url="https://github.com/udachneg/nut-us3000-synology"\n'
             'distributor=""\n'
             'distributor_url=""\n'

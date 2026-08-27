@@ -40,7 +40,7 @@ EXPECTED_INFO = {
     "displayname": "NUT US3000",
     "description": "Native USB driver and host-local NUT 2.8.5 endpoint for UGREEN US3000.",
     "description_rus": "Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000.",
-    "maintainer": "HEVTECH",
+    "maintainer": "Hevtech",
     "arch": "epyc7002",
     "os_min_ver": "7.2.2-72806",
     "thirdparty": "yes",
@@ -336,7 +336,7 @@ class InfoAndPrivilegeTest(SpkMetadataFixture):
         self.assertIn("Version 2.1, February 1999", lgpl)
         self.assertGreater(len(lgpl), 23_000)
         for required in (
-            "HEVTECH", "GPL-2.0-or-later", "NUT 2.8.5",
+            "Hevtech", "GPL-2.0-or-later", "NUT 2.8.5",
             "libusb 1.0.29", "LGPL-2.1-or-later", "SynoCommunity spksrc",
             "5c3cc7da1d4221d7e081ed2a31ba820b0455d4de",
             "nut-2.8.5.tar.gz", "libusb-1.0.29.tar.bz2",
@@ -346,7 +346,7 @@ class InfoAndPrivilegeTest(SpkMetadataFixture):
     def test_public_native_sources_have_exact_hevtech_license_header(self):
         header = (
             "/*\n"
-            " * Copyright (C) 2026 HEVTECH\n"
+            " * Copyright (C) 2026 Hevtech\n"
             " * SPDX-License-Identifier: GPL-2.0-or-later\n"
             " */\n"
         )

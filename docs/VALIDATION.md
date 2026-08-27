@@ -3,7 +3,7 @@
 Status: `RC_PENDING_PUBLIC_CLEAN_INSTALL`
 
 The `2.8.5-0016` publication revision preserves the accepted native runtime
-contract while changing only release metadata, HEVTECH source headers,
+contract while changing only release metadata, Hevtech copyright headers,
 user-facing compatibility wording and public build/release infrastructure.
 
 ## Validated matrix

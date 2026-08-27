@@ -217,7 +217,7 @@ def parse_info(data, package_digest):
         "description": "Native USB driver and host-local NUT 2.8.5 endpoint for UGREEN US3000.",
         "description_rus": "Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000.",
         "arch": "epyc7002",
-        "maintainer": "HEVTECH",
+        "maintainer": "Hevtech",
         "maintainer_url": "https://github.com/udachneg/nut-us3000-synology",
         "distributor": "",
         "distributor_url": "",

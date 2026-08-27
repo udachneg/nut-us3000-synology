@@ -2,7 +2,7 @@
 
 ## 2.8.5-0016 — pre-release
 
-- First public HEVTECH release candidate.
+- First public release candidate, maintained by Hevtech.
 - Native NUT 2.8.5 and libusb 1.0.29 package for the exact documented
   Xpenology/Arc DSM matrix.
 - Reproducible two-build offline release flow with pinned upstream sources,

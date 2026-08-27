@@ -104,7 +104,7 @@ class SpksrcPackagingTest(unittest.TestCase):
         self.require_file(recipe)
         text = recipe.read_text()
         self.assertIn("SPK_REV = 0016\n", text)
-        self.assertIn("MAINTAINER = HEVTECH\n", text)
+        self.assertIn("MAINTAINER = Hevtech\n", text)
         self.assertIn("MAINTAINER_URL = https://github.com/udachneg/nut-us3000-synology\n", text)
         self.assertIn("HOMEPAGE = https://github.com/udachneg/nut-us3000-synology\n", text)
         self.assertIn("LICENSE = GPL-2.0-or-later AND LGPL-2.1-or-later\n", text)

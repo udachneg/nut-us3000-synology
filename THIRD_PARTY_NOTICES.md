@@ -1,6 +1,6 @@
 # Third-party notices
 
-The original HEVTECH code and package integration in this repository are
+The original Hevtech code and package integration in this repository are
 licensed under `GPL-2.0-or-later`; see [`LICENSE`](LICENSE).
 
 ## NUT 2.8.5 (Network UPS Tools)

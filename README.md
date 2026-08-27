@@ -1,4 +1,4 @@
-# HEVTECH NUT US3000 for Synology DSM
+# NUT US3000 for Synology DSM
 
 [Русский](README_RU.md)
 
@@ -170,7 +170,7 @@ Treat a different DSM build as untested until verified. After every update:
 
 ## License and trademarks
 
-HEVTECH code and package integration are licensed under
+Code and package integration maintained by Hevtech are licensed under
 [`GPL-2.0-or-later`](LICENSE). Third-party licenses and exact source components
 are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Build
 instructions are in [docs/BUILDING.md](docs/BUILDING.md), and validation status

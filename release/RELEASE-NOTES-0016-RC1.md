@@ -1,4 +1,4 @@
-# HEVTECH NUT US3000 2.8.5-0016 RC1
+# NUT US3000 2.8.5-0016 RC1
 
 This is a pre-release awaiting a fresh package install on a preconfigured DSM
 host. The package itself keeps the internal version `2.8.5-0016`; the
@@ -34,3 +34,5 @@ SPK SHA-256:
 ```text
 0b9b021357e8168b99ddb6e6fb33010c976191b2b3631133d23a5753989c7307
 ```
+
+Maintained by Hevtech.

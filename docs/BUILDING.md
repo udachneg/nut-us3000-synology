@@ -1,6 +1,6 @@
 # Reproducible build
 
-This document describes the developer build path for HEVTECH NUT US3000
+This document describes the developer build path for NUT US3000
 `2.8.5-0016`. It is not part of the ordinary DSM installation flow.
 
 ## Pinned inputs

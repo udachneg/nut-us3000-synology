@@ -5,7 +5,7 @@ SPK_ICON = src/icon-256.png
 
 DEPENDS = cross/nut
 
-MAINTAINER = HEVTECH
+MAINTAINER = Hevtech
 MAINTAINER_URL = https://github.com/udachneg/nut-us3000-synology
 DESCRIPTION = Native USB driver and host-local NUT 2.8.5 endpoint for UGREEN US3000.
 DESCRIPTION_RUS = Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000.
