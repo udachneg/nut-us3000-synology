@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2026 HEVTECH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 #define _GNU_SOURCE
 #define _POSIX_C_SOURCE 200809L
 

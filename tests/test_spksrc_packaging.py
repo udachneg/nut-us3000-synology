@@ -103,7 +103,12 @@ class SpksrcPackagingTest(unittest.TestCase):
         recipe = OVERLAY / "spk/nut-us3000/Makefile"
         self.require_file(recipe)
         text = recipe.read_text()
-        self.assertIn("SPK_REV = 0015\n", text)
+        self.assertIn("SPK_REV = 0016\n", text)
+        self.assertIn("MAINTAINER = HEVTECH\n", text)
+        self.assertIn("MAINTAINER_URL = https://github.com/udachneg/nut-us3000-synology\n", text)
+        self.assertIn("HOMEPAGE = https://github.com/udachneg/nut-us3000-synology\n", text)
+        self.assertIn("LICENSE = GPL-2.0-or-later AND LGPL-2.1-or-later\n", text)
+        self.assertIn("REQUIRED_MAX_DSM = 7.2\n", text)
         self.assertNotIn("OS_MAX_VER", text)
         self.assertIn("DESCRIPTION_RUS = Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000.\n", text)
         self.assertNotIn("FWPORTS", text)

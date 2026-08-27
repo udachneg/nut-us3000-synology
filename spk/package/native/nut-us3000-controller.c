@@ -1,3 +1,8 @@
+/*
+ * Copyright (C) 2026 HEVTECH
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ */
+
 #include <errno.h>
 #include <signal.h>
 #include <stddef.h>

@@ -17,6 +17,15 @@ RETRY = ROOT / "spk/package/payload/share/nut-us3000/retry-step.sh"
 PREUNINST = ROOT / "spk/package/scripts/preuninst"
 POSTUNINST = ROOT / "spk/package/scripts/postuninst"
 
+PUBLISHED_RUNTIME_HASHES = {
+    "spk/package/payload/share/nut-us3000/retry-step.sh": "1bcbced106852d7de400af08d75642b421c3a99616d51b5376fdc0d161b4ff45",
+    "spk/package/payload/share/nut-us3000/lib.sh": "d94b3d6a096ad29c1b27d1dca859518fb1b6f434a58d32f1b0b43b377d9bf51a",
+    "spk/package/scripts/start-stop-status": "4b769ed62b06765f5411557d7474be4e5341e09bc3203e6c2ab36b062ba6275b",
+    "spk/package/scripts/postinst": "28879bd12810ecb62ae1c32cb76d5945c58c78f365c6fccc5f6f0b612f7b4767",
+    "spk/package/scripts/postuninst": "1ec4214bc95951efc0bac7dad0873c8b54acb8d2ead0e63a94281d569b972c21",
+    "spk/package/conf/privilege": "d1cd81b2cd25032a9232e0e75dbd27f908a87a1ad2eebbde8e4f802f17b44250",
+}
+
 UPS_CONF = (
     b"[ups]\n"
     b"    driver = usbhid-ups\n"
@@ -601,6 +610,11 @@ class LifecycleFixture:
 
 
 class SpkLifecycleTest(unittest.TestCase):
+    def test_publication_metadata_does_not_change_accepted_runtime_sources(self):
+        for relative, expected in PUBLISHED_RUNTIME_HASHES.items():
+            with self.subTest(relative=relative):
+                self.assertEqual(expected, hashlib.sha256((ROOT / relative).read_bytes()).hexdigest())
+
     def require_production(self):
         for artifact in (LIB, HEALTH, CONTROL):
             self.assertTrue(

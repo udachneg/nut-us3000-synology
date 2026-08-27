@@ -1,16 +1,16 @@
 SPK_NAME = nut-us3000
 SPK_VERS = 2.8.5
-SPK_REV = 0015
+SPK_REV = 0016
 SPK_ICON = src/icon-256.png
 
 DEPENDS = cross/nut
 
-MAINTAINER = NUT US3000 local build
-MAINTAINER_URL = https://networkupstools.org/
+MAINTAINER = HEVTECH
+MAINTAINER_URL = https://github.com/udachneg/nut-us3000-synology
 DESCRIPTION = Native USB driver and host-local NUT 2.8.5 endpoint for UGREEN US3000.
 DESCRIPTION_RUS = Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000.
 DISPLAY_NAME = NUT US3000
-HOMEPAGE = https://networkupstools.org/
+HOMEPAGE = https://github.com/udachneg/nut-us3000-synology
 LICENSE = GPL-2.0-or-later AND LGPL-2.1-or-later
 LICENSE_FILE = src/LICENSE
 

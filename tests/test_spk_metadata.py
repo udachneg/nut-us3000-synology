@@ -22,6 +22,9 @@ TEMPLATES = PACKAGE / "templates"
 SCRIPTS = PACKAGE / "scripts"
 ICON_GENERATOR = ROOT / "spk/scripts/generate-icons.py"
 APP_PAYLOAD = PACKAGE / "payload/app"
+ROOT_LICENSE = ROOT / "LICENSE"
+LIBUSB_LICENSE = ROOT / "LICENSES/LGPL-2.1-or-later.txt"
+THIRD_PARTY_NOTICES = ROOT / "THIRD_PARTY_NOTICES.md"
 
 LIFECYCLE_NAMES = (
     "postinst",
@@ -33,11 +36,11 @@ LIFECYCLE_NAMES = (
 )
 EXPECTED_INFO = {
     "package": "nut-us3000",
-    "version": "2.8.5-0015",
+    "version": "2.8.5-0016",
     "displayname": "NUT US3000",
     "description": "Native USB driver and host-local NUT 2.8.5 endpoint for UGREEN US3000.",
     "description_rus": "Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000.",
-    "maintainer": "NUT US3000 local build",
+    "maintainer": "HEVTECH",
     "arch": "epyc7002",
     "os_min_ver": "7.2.2-72806",
     "thirdparty": "yes",
@@ -319,6 +322,40 @@ class SpkMetadataFixture(unittest.TestCase):
 
 
 class InfoAndPrivilegeTest(SpkMetadataFixture):
+    def test_public_license_bundle_covers_hevtech_nut_libusb_and_spksrc(self):
+        self.require_file(ROOT_LICENSE)
+        self.require_file(LIBUSB_LICENSE)
+        self.require_file(THIRD_PARTY_NOTICES)
+        gpl = ROOT_LICENSE.read_text()
+        lgpl = LIBUSB_LICENSE.read_text()
+        notices = THIRD_PARTY_NOTICES.read_text()
+        self.assertIn("GNU GENERAL PUBLIC LICENSE", gpl)
+        self.assertIn("Version 2, June 1991", gpl)
+        self.assertGreater(len(gpl), 17_000)
+        self.assertIn("GNU LESSER GENERAL PUBLIC LICENSE", lgpl)
+        self.assertIn("Version 2.1, February 1999", lgpl)
+        self.assertGreater(len(lgpl), 23_000)
+        for required in (
+            "HEVTECH", "GPL-2.0-or-later", "NUT 2.8.5",
+            "libusb 1.0.29", "LGPL-2.1-or-later", "SynoCommunity spksrc",
+            "5c3cc7da1d4221d7e081ed2a31ba820b0455d4de",
+            "nut-2.8.5.tar.gz", "libusb-1.0.29.tar.bz2",
+        ):
+            self.assertIn(required, notices)
+
+    def test_public_native_sources_have_exact_hevtech_license_header(self):
+        header = (
+            "/*\n"
+            " * Copyright (C) 2026 HEVTECH\n"
+            " * SPDX-License-Identifier: GPL-2.0-or-later\n"
+            " */\n"
+        )
+        for name in ("nut-us3000-controller.c", "nut-us3000-hostctl.c"):
+            with self.subTest(name=name):
+                source = PACKAGE / "native" / name
+                self.require_file(source)
+                self.assertTrue(source.read_text().startswith(header))
+
     def test_info_is_evaluated_by_pkg_dump_info_in_exact_field_order(self):
         root = self.temp_root()
         include = root / "pkgscripts/include/pkg_util.sh"
@@ -461,9 +498,12 @@ class InfoAndPrivilegeTest(SpkMetadataFixture):
         ):
             self.assertIn(token, russian)
         combined = english + russian
+        self.assertIn("dsm 7.2.2-72806", english)
+        self.assertIn("dsm 7.2.2-72806", russian)
         for forbidden in (
             "0011", "0012", "rollback", "debug", "hybrid", "transient",
             "monuser", "secret", "password", "smtp",
+            "later dsm 7.2 updates", "последующие обновления dsm 7.2",
         ):
             self.assertNotIn(forbidden, combined)
 

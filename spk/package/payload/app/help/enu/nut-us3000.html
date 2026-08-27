@@ -23,7 +23,7 @@
   <p>If USB is unavailable during boot, the first recovery attempt waits until system uptime reaches 10 minutes; later checks run every 5 minutes. Reconnect only the USB data cable. Keep mains power and the protected load connected.</p>
 
   <h2 id="dsm-update">DSM update</h2>
-  <p>This build supports DSM 7.2.2-72806 and later DSM 7.2 updates on epyc7002. After every DSM update, verify Package Center status, USB identity, both local endpoints, the DSM UPS connection and the non-local firewall denial before relying on protection.</p>
+  <p>This build is validated only on Xpenology/Arc presenting SA6400 with DSM 7.2.2-72806 on epyc7002. Other DSM builds and official Synology models are untested. After every DSM update, verify Package Center status, USB identity, both local endpoints, the DSM UPS connection and the non-local firewall denial before relying on protection.</p>
 
   <h2 id="uninstall">Uninstall</h2>
   <p>The uninstall wizard can keep package data for reinstall or delete the package-owned home, configuration and state. It does not remove DSM UPS settings, the DSM-managed firewall rule or external host integration. Review those host settings manually after uninstall.</p>
