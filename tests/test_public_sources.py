@@ -19,6 +19,7 @@ NUT_BYTES = b"fixture NUT 2.8.5 source\n"
 LIBUSB_BYTES = b"fixture libusb 1.0.29 source\n"
 SIG_BYTES = b"fixture NUT signature\n"
 KEY_BYTES = b"fixture NUT keyring\n"
+BINARY_KEY_BYTES = b"fixture binary NUT keyring\n"
 
 EXPECTED_MANIFEST = {
     "artifacts/nut-2.8.5.tar.gz":
@@ -106,8 +107,21 @@ class PublicSourceFetcherTest(unittest.TestCase):
         (fake_bin / "gpgv").write_text(
             "#!/bin/sh\n"
             "set -eu\n"
+            "[ \"$1\" = --keyring ]\n"
+            "[ \"$(cat \"$2\")\" = \"$FIXTURE_BINARY_KEY\" ] || exit 2\n"
             "[ \"${FIXTURE_MODE:-good}\" != signature-fail ] || exit 1\n"
             "exit 0\n"
+        )
+        (fake_bin / "gpg").write_text(
+            "#!/bin/sh\n"
+            "set -eu\n"
+            "out= previous=\n"
+            "for argument in \"$@\"; do\n"
+            "  [ \"$previous\" = --output ] && out=$argument\n"
+            "  previous=$argument\n"
+            "done\n"
+            "[ -n \"$out\" ]\n"
+            "printf '%s' \"$FIXTURE_BINARY_KEY\" > \"$out\"\n"
         )
         for command in fake_bin.iterdir():
             command.chmod(0o755)
@@ -119,6 +133,7 @@ class PublicSourceFetcherTest(unittest.TestCase):
             "FIXTURE_NUT": NUT_BYTES.decode(),
             "FIXTURE_SIG": SIG_BYTES.decode(),
             "FIXTURE_LIBUSB": LIBUSB_BYTES.decode(),
+            "FIXTURE_BINARY_KEY": BINARY_KEY_BYTES.decode().rstrip("\n"),
         }
 
     def run_fetcher(self, artifacts: Path, mode: str = "good"):

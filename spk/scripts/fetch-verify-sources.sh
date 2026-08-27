@@ -101,7 +101,12 @@ curl --fail --silent --show-error --location --proto '=https' --tlsv1.2 \
 [ "$(hash_file "$attempt/$SIGNATURE_NAME")" = "$signature_hash" ] || fail 'downloaded signature hash mismatch'
 [ "$(hash_file "$attempt/$LIBUSB_NAME")" = "$libusb_hash" ] || fail 'downloaded libusb hash mismatch'
 cmp -s "$attempt/$SIGNATURE_NAME" "$signature" || fail 'downloaded signature differs from bundled evidence'
-gpgv --keyring "$keyring" "$attempt/$SIGNATURE_NAME" "$attempt/$NUT_NAME" >/dev/null 2>&1 || \
+dearmored_keyring=$attempt/nut-keyring.gpg
+gpg --batch --yes --dearmor --output "$dearmored_keyring" "$keyring" >/dev/null 2>&1 || \
+    fail 'NUT key dearmor failed'
+[ -f "$dearmored_keyring" ] && [ ! -L "$dearmored_keyring" ] || fail 'NUT keyring conversion is unsafe'
+chmod 600 "$dearmored_keyring"
+gpgv --keyring "$dearmored_keyring" "$attempt/$SIGNATURE_NAME" "$attempt/$NUT_NAME" >/dev/null 2>&1 || \
     fail 'NUT detached signature verification failed'
 
 for name in "$NUT_NAME" "$LIBUSB_NAME"; do
