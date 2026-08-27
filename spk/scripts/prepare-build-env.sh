@@ -80,7 +80,11 @@ docker run --rm --platform "$BUILDER_PLATFORM" --network none \
     '
 docker run --rm --platform "$BUILDER_PLATFORM" --network none \
     -v "$cache_name:/spksrc" -w /spksrc \
-    "$BUILDER_IMAGE" /usr/bin/make -C toolchain/syno-epyc7002-7.2 toolchain
+    "$BUILDER_IMAGE" /usr/bin/make -C toolchain/syno-epyc7002-7.2 \
+    PRE_RUSTC_TARGET=nut_us3000_skip_rust_pre \
+    RUSTC_TARGET=nut_us3000_skip_rust \
+    POST_RUSTC_TARGET=nut_us3000_skip_rust_post \
+    toolchain
 docker run --rm --platform "$BUILDER_PLATFORM" --network none \
     -v "$cache_name:/spksrc" \
     "$BUILDER_IMAGE" /bin/sh -c \

@@ -50,6 +50,12 @@ class ReleaseBuildContractTest(unittest.TestCase):
         self.assertIn("ds.epyc7002-7.2.dev.txz", prepare)
         self.assertNotIn("cp -a /toolkit/. /spksrc/distrib/", prepare)
 
+    def test_prepare_skips_only_unused_rust_targets_for_c_only_toolchain(self):
+        prepare = PREPARE.read_text()
+        self.assertIn("PRE_RUSTC_TARGET=nut_us3000_skip_rust_pre", prepare)
+        self.assertIn("RUSTC_TARGET=nut_us3000_skip_rust", prepare)
+        self.assertIn("POST_RUSTC_TARGET=nut_us3000_skip_rust_post", prepare)
+
 
 class ProvenanceWriterTest(unittest.TestCase):
     def setUp(self):
