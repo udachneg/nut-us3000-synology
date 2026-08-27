@@ -1,0 +1,121 @@
+#!/bin/sh
+set -eu
+
+nutus3000_delete_data=${wizard_delete_data-}
+nutus3000_keep_data=${wizard_keep_data-}
+
+case $nutus3000_delete_data in ''|true|false) ;; *) exit 1 ;; esac
+case $nutus3000_keep_data in ''|true|false) ;; *) exit 1 ;; esac
+
+if [ "$nutus3000_delete_data" = true ]; then
+    [ "$nutus3000_keep_data" = false ] || exit 1
+else
+    [ -z "$nutus3000_keep_data" ] || [ "$nutus3000_keep_data" = true ] || exit 1
+    exit 0
+fi
+
+[ -n "${SYNOPKG_PKGHOME:-}" ] || exit 1
+[ -n "${SYNOPKG_PKGVAR:-}" ] || exit 1
+
+nutus3000_path_is_physical() {
+    [ $# -eq 1 ] || return 1
+    nutus3000_path=$1
+    case $nutus3000_path in /*) ;; *) return 1 ;; esac
+    while [ "$nutus3000_path" != / ]; do
+        [ ! -L "$nutus3000_path" ] || return 1
+        nutus3000_path=${nutus3000_path%/*}
+        [ -n "$nutus3000_path" ] || nutus3000_path=/
+    done
+}
+
+nutus3000_canonical_exact_dir() {
+    [ $# -eq 1 ] || return 1
+    [ -d "$1" ] && [ ! -L "$1" ] || return 1
+    nutus3000_path_is_physical "$1" || return 1
+    nutus3000_canonical=$(CDPATH= cd -P "$1" 2>/dev/null && pwd -P) || return 1
+    [ "$nutus3000_canonical" = "$1" ] || return 1
+    printf '%s\n' "$nutus3000_canonical"
+}
+
+nutus3000_stat_device() {
+    [ $# -eq 1 ] || return 1
+    nutus3000_device=$(/usr/bin/stat -c '%d' "$1") || return 1
+    case $nutus3000_device in ''|*[!0-9]*) return 1 ;; esac
+    printf '%s\n' "$nutus3000_device"
+}
+
+nutus3000_preflight_tree() {
+    [ $# -eq 2 ] || return 1
+    nutus3000_tree=$1
+    nutus3000_expected_device=$2
+    for nutus3000_entry in "$nutus3000_tree"/* "$nutus3000_tree"/.[!.]* "$nutus3000_tree"/..?*; do
+        [ -e "$nutus3000_entry" ] || [ -L "$nutus3000_entry" ] || continue
+        if [ -L "$nutus3000_entry" ]; then
+            continue
+        fi
+        [ "$(nutus3000_stat_device "$nutus3000_entry")" = "$nutus3000_expected_device" ] || return 1
+        if [ -d "$nutus3000_entry" ]; then
+            (nutus3000_preflight_tree "$nutus3000_entry" "$nutus3000_expected_device") || return 1
+        fi
+    done
+}
+
+nutus3000_delete_tree_contents() {
+    [ $# -eq 2 ] || return 1
+    nutus3000_tree=$1
+    nutus3000_expected_device=$2
+    for nutus3000_entry in "$nutus3000_tree"/* "$nutus3000_tree"/.[!.]* "$nutus3000_tree"/..?*; do
+        [ -e "$nutus3000_entry" ] || [ -L "$nutus3000_entry" ] || continue
+        if [ -L "$nutus3000_entry" ]; then
+            /bin/rm -f "$nutus3000_entry" || return 1
+            continue
+        fi
+        [ "$(nutus3000_stat_device "$nutus3000_entry")" = "$nutus3000_expected_device" ] || return 1
+        if [ -d "$nutus3000_entry" ]; then
+            (nutus3000_delete_tree_contents "$nutus3000_entry" "$nutus3000_expected_device") || return 1
+            /bin/rmdir "$nutus3000_entry" || return 1
+        else
+            /bin/rm -f "$nutus3000_entry" || return 1
+        fi
+    done
+}
+
+nutus3000_home=$(nutus3000_canonical_exact_dir "$SYNOPKG_PKGHOME") || exit 1
+nutus3000_var=$(nutus3000_canonical_exact_dir "$SYNOPKG_PKGVAR") || exit 1
+
+case $nutus3000_var in */@appdata/nut-us3000) ;; *) exit 1 ;; esac
+nutus3000_volume=${nutus3000_var%/@appdata/nut-us3000}
+[ -n "$nutus3000_volume" ] || exit 1
+[ "$nutus3000_home" = "$nutus3000_volume/@apphome/nut-us3000" ] || exit 1
+nutus3000_config=$(nutus3000_canonical_exact_dir "$nutus3000_volume/@appconf/nut-us3000") || exit 1
+[ "$nutus3000_config" = "$nutus3000_volume/@appconf/nut-us3000" ] || exit 1
+
+for nutus3000_parent in \
+    "$nutus3000_volume/@apphome" \
+    "$nutus3000_volume/@appdata" \
+    "$nutus3000_volume/@appconf"
+do
+    nutus3000_canonical_exact_dir "$nutus3000_parent" >/dev/null || exit 1
+done
+
+nutus3000_root_device=$(nutus3000_stat_device "$nutus3000_home") || exit 1
+for nutus3000_target in "$nutus3000_var" "$nutus3000_config"; do
+    [ "$(nutus3000_stat_device "$nutus3000_target")" = "$nutus3000_root_device" ] || exit 1
+done
+for nutus3000_parent in \
+    "$nutus3000_volume/@apphome" \
+    "$nutus3000_volume/@appdata" \
+    "$nutus3000_volume/@appconf"
+do
+    [ "$(nutus3000_stat_device "$nutus3000_parent")" = "$nutus3000_root_device" ] || exit 1
+done
+
+nutus3000_preflight_tree "$nutus3000_home" "$nutus3000_root_device" || exit 1
+nutus3000_preflight_tree "$nutus3000_var" "$nutus3000_root_device" || exit 1
+nutus3000_preflight_tree "$nutus3000_config" "$nutus3000_root_device" || exit 1
+
+nutus3000_delete_tree_contents "$nutus3000_home" "$nutus3000_root_device" || exit 1
+nutus3000_delete_tree_contents "$nutus3000_var" "$nutus3000_root_device" || exit 1
+nutus3000_delete_tree_contents "$nutus3000_config" "$nutus3000_root_device" || exit 1
+
+exit 0

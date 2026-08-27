@@ -1,0 +1,21 @@
+#!/bin/sh
+set -eu
+
+[ -n "${SYNOPKG_PKGDEST:-}" ] || exit 1
+helper=$SYNOPKG_PKGDEST/share/nut-us3000/lib.sh
+[ ! -L "$helper" ] && [ -f "$helper" ] || exit 1
+
+nutus3000_any_exact_package_pid() {
+    return 125
+}
+
+. "$helper" || exit 1
+
+if nutus3000_any_exact_package_pid; then
+    exit 1
+else
+    helper_status=$?
+    [ "$helper_status" -eq 1 ] || exit 1
+fi
+
+exit 0

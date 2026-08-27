@@ -1,0 +1,103 @@
+#!/bin/sh
+set -eu
+
+umask 077
+
+reject_symlink_components() {
+    checked_path=$1
+    case "$checked_path" in
+        /*) ;;
+        *) return 1 ;;
+    esac
+    while [ "$checked_path" != / ]; do
+        [ ! -L "$checked_path" ] || return 1
+        checked_path=${checked_path%/*}
+        [ -n "$checked_path" ] || checked_path=/
+    done
+}
+
+canonical_dir() {
+    canonical_input=$1
+    [ -d "$canonical_input" ] || return 1
+    (
+        CDPATH= cd -P "$canonical_input" 2>/dev/null || exit 1
+        pwd -P
+    )
+}
+
+mode_is_0600() {
+    mode_line=$(LC_ALL=C ls -ld "$1") || return 1
+    case "$mode_line" in
+        -rw-------*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+hash_file() {
+    hash_path=$1
+    if [ "$hash_tool" = sha256sum ]; then
+        hash_line=$(sha256sum "$hash_path") || return 1
+    else
+        hash_line=$(shasum -a 256 "$hash_path") || return 1
+    fi
+    hash_value=${hash_line%% *}
+    [ "$hash_line" = "$hash_value  $hash_path" ] || return 1
+    case "$hash_value" in
+        *[!0-9a-f]*|'') return 1 ;;
+    esac
+    [ "${#hash_value}" -eq 64 ] || return 1
+    printf '%s\n' "$hash_value"
+}
+
+[ -n "${SYNOPKG_PKGVAR:-}" ] || exit 1
+config_alias=/var/packages/nut-us3000/etc
+config_parent=${config_alias%/*}
+package_var=$(canonical_dir "$SYNOPKG_PKGVAR") || exit 1
+manifest=$package_var/config-manifest.sha256
+
+reject_symlink_components "$config_parent" || exit 1
+reject_symlink_components "$package_var" || exit 1
+if [ -L "$config_alias" ]; then
+    config_dir=$(canonical_dir "$config_alias") || exit 1
+    case "$package_var" in
+        */@appdata/nut-us3000)
+            expected_config_dir=${package_var%/@appdata/nut-us3000}/@appconf/nut-us3000
+            ;;
+        *) exit 1 ;;
+    esac
+    [ "$config_dir" = "$expected_config_dir" ] || exit 1
+else
+    config_dir=$config_alias
+fi
+
+reject_symlink_components "$config_dir" || exit 1
+reject_symlink_components "$manifest" || exit 1
+[ ! -L "$manifest" ] && [ -f "$manifest" ] || exit 1
+mode_is_0600 "$manifest" || exit 1
+for name in ups.conf upsd.conf upsd.users; do
+    target=$config_dir/$name
+    [ ! -L "$target" ] && [ -f "$target" ] || exit 1
+done
+
+if command -v sha256sum >/dev/null 2>&1; then
+    hash_tool=sha256sum
+elif command -v shasum >/dev/null 2>&1; then
+    hash_tool=shasum
+else
+    exit 1
+fi
+
+expected=$(mktemp "$package_var/.nut-us3000-preupgrade.XXXXXX") || exit 1
+cleanup() {
+    status=$?
+    trap - 0
+    rm -f "$expected" || :
+    exit "$status"
+}
+trap cleanup 0
+
+for name in ups.conf upsd.conf upsd.users; do
+    digest=$(hash_file "$config_dir/$name") || exit 1
+    printf '%s  %s\n' "$digest" "$name" >> "$expected"
+done
+cmp -s "$expected" "$manifest"

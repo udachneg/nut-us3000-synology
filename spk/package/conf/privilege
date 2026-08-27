@@ -1,0 +1,25 @@
+{
+  "defaults": {"run-as": "package"},
+  "username": "nutus3000",
+  "groupname": "nutus3000",
+  "tool": [
+    {
+      "relpath": "libexec/nut/usbhid-ups",
+      "user": "package",
+      "group": "package",
+      "permission": "0750"
+    },
+    {
+      "relpath": "libexec/nut/nut-us3000-hostctl",
+      "user": "root",
+      "group": "package",
+      "permission": "6550"
+    },
+    {
+      "relpath": "libexec/nut/nut-us3000-controller",
+      "user": "package",
+      "group": "package",
+      "permission": "0750"
+    }
+  ]
+}

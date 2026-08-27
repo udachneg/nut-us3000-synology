@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html class="img-no-display" lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <title>NUT US3000 Help</title>
+</head>
+<body>
+  <h1>NUT US3000</h1>
+
+  <h2 id="setup">Setup</h2>
+  <p>This native package supports one USB-connected UGREEN US3000 with identity <strong>2b89:ffff</strong>, serial DC600. It uses NUT 2.8.5 and no runtime container.</p>
+  <p>In Control Panel &gt; Hardware &amp; Power &gt; UPS, select <strong>Synology UPS Server</strong>, enter <strong>10.255.255.1</strong>, and set the safe-mode delay to the recommended <strong>10 minutes</strong>. The host-local DSM endpoint is <strong>10.255.255.1:3493</strong>.</p>
+
+  <h2 id="verification">Verification</h2>
+  <p><strong>Package Center: Running</strong> means that the package controller is active. It does not by itself mean that the UPS is connected. Check the actual connection, charge and power state in the DSM UPS UI. Standard DSM notifications report UPS-server loss and restoration.</p>
+  <p>Before relying on shutdown protection, verify that the DSM-managed firewall blocks TCP 3493 to 10.255.255.1 from non-local interfaces.</p>
+
+  <h2 id="start-stop">Start and stop</h2>
+  <p>Use Package Center to start or stop NUT US3000. Start performs one immediate USB attempt and keeps the controller active for safe retries. Stop ends the controller first, then NUT, and restores the exact USB interface.</p>
+
+  <h2 id="usb-recovery">USB recovery</h2>
+  <p>If USB is unavailable during boot, the first recovery attempt waits until system uptime reaches 10 minutes; later checks run every 5 minutes. Reconnect only the USB data cable. Keep mains power and the protected load connected.</p>
+
+  <h2 id="dsm-update">DSM update</h2>
+  <p>This build supports DSM 7.2.2-72806 and later DSM 7.2 updates on epyc7002. After every DSM update, verify Package Center status, USB identity, both local endpoints, the DSM UPS connection and the non-local firewall denial before relying on protection.</p>
+
+  <h2 id="uninstall">Uninstall</h2>
+  <p>The uninstall wizard can keep package data for reinstall or delete the package-owned home, configuration and state. It does not remove DSM UPS settings, the DSM-managed firewall rule or external host integration. Review those host settings manually after uninstall.</p>
+
+  <h2 id="limitations">Limitations</h2>
+  <p>Only the exact UGREEN US3000 USB identity above is supported. The package does not estimate runtime from the device value 65535, control UPS load power, or replace DSM shutdown and notification policy.</p>
+</body>
+</html>

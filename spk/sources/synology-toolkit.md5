@@ -1,0 +1,4 @@
+67caa22f50a45f2b252a011fd45020a8  base_env-7.2.txz  https://global.synologydownload.com/download/ToolChain/toolkit/7.2/base/base_env-7.2.txz
+21a23d292f81c39da1851978593dd5dc  ds.epyc7002-7.2.dev.txz  https://global.synologydownload.com/download/ToolChain/toolkit/7.2/epyc7002/ds.epyc7002-7.2.dev.txz
+b928b3c0adcacfbd53e9f3f5133a8a27  ds.epyc7002-7.2.env.txz  https://global.synologydownload.com/download/ToolChain/toolkit/7.2/epyc7002/ds.epyc7002-7.2.env.txz
+117ae882569c315db4b19e5426f50eb9  epyc7002-gcc1220_glibc236_x86_64-GPL.txz  https://global.synologydownload.com/download/ToolChain/toolchain/7.2-72806/AMD%20x86%20Linux%20Linux%205.10.55%20%28epyc7002%29/epyc7002-gcc1220_glibc236_x86_64-GPL.txz

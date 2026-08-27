@@ -1,0 +1,49 @@
+#!/bin/sh
+set -u
+
+[ $# -eq 1 ] || exit 64
+[ -n "${SYNOPKG_PKGDEST:-}" ] || exit 1
+nutus3000_control_library=$SYNOPKG_PKGDEST/share/nut-us3000/lib.sh
+nutus3000_hostctl=$SYNOPKG_PKGDEST/libexec/nut/nut-us3000-hostctl
+[ -f "$nutus3000_control_library" ] && [ ! -L "$nutus3000_control_library" ] || exit 1
+[ -f "$nutus3000_hostctl" ] && [ ! -L "$nutus3000_hostctl" ] && [ -x "$nutus3000_hostctl" ] || exit 1
+. "$nutus3000_control_library" || exit 1
+
+case $1 in
+    start)
+        if nutus3000_controller_status; then
+            "$nutus3000_hostctl" audit || exit 1
+            exit 0
+        fi
+        nutus3000_initial_preflight || exit 1
+        "$nutus3000_hostctl" ensure || exit 1
+        "$nutus3000_hostctl" audit || exit 1
+        nutus3000_attempt_start
+        nutus3000_start_rc=$?
+        if [ "$nutus3000_start_rc" -eq 0 ]; then
+            nutus3000_first_delay=300
+        elif [ "$nutus3000_start_rc" -eq 75 ]; then
+            nutus3000_first_delay=$(nutus3000_first_delay_after_unavailable) || exit 1
+        else
+            exit 1
+        fi
+        if nutus3000_controller_start "$nutus3000_first_delay"; then
+            exit 0
+        fi
+        if nutus3000_stop; then
+            "$nutus3000_hostctl" release >/dev/null 2>&1 || :
+        fi
+        exit 1
+        ;;
+    stop)
+        nutus3000_controller_stop || exit 1
+        nutus3000_stop || exit 1
+        "$nutus3000_hostctl" release || exit 1
+        ;;
+    status)
+        "$nutus3000_hostctl" audit || exit 1
+        nutus3000_status
+        ;;
+    *) exit 64 ;;
+esac
+exit $?

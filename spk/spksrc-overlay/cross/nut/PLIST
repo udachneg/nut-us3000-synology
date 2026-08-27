@@ -1,0 +1,6 @@
+bin:bin/upsc
+bin:sbin/upsd
+bin:sbin/upsdrvctl
+bin:libexec/nut/usbhid-ups
+lib:lib/libupsclient.so.7.1.0
+lnk:lib/libupsclient.so.7

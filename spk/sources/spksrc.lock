@@ -1,0 +1,4 @@
+SPKSRC_URL=https://github.com/SynoCommunity/spksrc.git
+SPKSRC_COMMIT=5c3cc7da1d4221d7e081ed2a31ba820b0455d4de
+BUILDER_PLATFORM=linux/amd64
+BUILDER_IMAGE=ghcr.io/synocommunity/spksrc@sha256:deeef1a01210c914c43a7c18a40aee62885eeee041cc70e7bd1907153561cc94
