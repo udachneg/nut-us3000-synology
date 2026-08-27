@@ -72,7 +72,12 @@ docker run --rm --platform "$BUILDER_PLATFORM" --network none \
     "$BUILDER_IMAGE" /bin/sh -c 'cp -a /input/. /spksrc/'
 docker run --rm --platform "$BUILDER_PLATFORM" --network none \
     -v "$attempt/toolkit/verified:/toolkit:ro" -v "$cache_name:/spksrc" \
-    "$BUILDER_IMAGE" /bin/sh -c 'mkdir -p /spksrc/distrib && cp -a /toolkit/. /spksrc/distrib/'
+    "$BUILDER_IMAGE" /bin/sh -c '
+        set -eu
+        mkdir -p /spksrc/distrib/toolchain/7.2 /spksrc/distrib/toolkit/7.2
+        cp -a /toolkit/epyc7002-gcc1220_glibc236_x86_64-GPL.txz /spksrc/distrib/toolchain/7.2/
+        cp -a /toolkit/ds.epyc7002-7.2.dev.txz /spksrc/distrib/toolkit/7.2/
+    '
 docker run --rm --platform "$BUILDER_PLATFORM" --network none \
     -v "$cache_name:/spksrc" -w /spksrc \
     "$BUILDER_IMAGE" /usr/bin/make -C toolchain/syno-epyc7002-7.2 toolchain

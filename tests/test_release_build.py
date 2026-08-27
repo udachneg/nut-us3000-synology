@@ -42,6 +42,14 @@ class ReleaseBuildContractTest(unittest.TestCase):
             self.assertNotEqual(0, completed.returncode)
             self.assertEqual("must survive\n", (output / "existing").read_text())
 
+    def test_prepare_maps_verified_toolkit_to_spksrc_download_cache(self):
+        prepare = PREPARE.read_text()
+        self.assertIn("/spksrc/distrib/toolchain/7.2", prepare)
+        self.assertIn("/spksrc/distrib/toolkit/7.2", prepare)
+        self.assertIn("epyc7002-gcc1220_glibc236_x86_64-GPL.txz", prepare)
+        self.assertIn("ds.epyc7002-7.2.dev.txz", prepare)
+        self.assertNotIn("cp -a /toolkit/. /spksrc/distrib/", prepare)
+
 
 class ProvenanceWriterTest(unittest.TestCase):
     def setUp(self):
