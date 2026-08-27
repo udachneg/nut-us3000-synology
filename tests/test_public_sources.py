@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+import tarfile
 import tempfile
 import unittest
 
@@ -14,6 +15,9 @@ MANIFEST = ROOT / "spk/sources/source-manifest.sha256"
 FETCHER = ROOT / "spk/scripts/fetch-verify-sources.sh"
 SIGNATURE = ROOT / "spk/sources/nut-2.8.5.tar.gz.sig"
 KEYRING = ROOT / "spk/sources/nut-key.gpg"
+RELEASE_MANIFEST = ROOT / "release/SOURCE-COMPONENTS-0016.sha256"
+RELEASE_NOTES = ROOT / "release/RELEASE-NOTES-0016-RC1.md"
+CANONICAL_SPK = ROOT / "artifacts/nut-us3000_epyc7002-7.2_2.8.5-0016.spk"
 
 NUT_BYTES = b"fixture NUT 2.8.5 source\n"
 LIBUSB_BYTES = b"fixture libusb 1.0.29 source\n"
@@ -30,6 +34,23 @@ EXPECTED_MANIFEST = {
         "c12ead62f833ad128266c1a812d0b487a62929adf1e28859a2783c8dc1c7f2a0",
     "artifacts/libusb-1.0.29.tar.bz2":
         "5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85",
+}
+
+EXPECTED_RELEASE_COMPONENTS = {
+    "artifacts/nut-us3000_epyc7002-7.2_2.8.5-0016.spk":
+        "0b9b021357e8168b99ddb6e6fb33010c976191b2b3631133d23a5753989c7307",
+    "artifacts/nut-2.8.5.tar.gz":
+        "18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1",
+    "spk/sources/nut-2.8.5.tar.gz.sig":
+        "3211f48f7a312ae13770828d768a5e4d95c6866bfd96bf79df44665c8e6c85fb",
+    "spk/sources/nut-key.gpg":
+        "c12ead62f833ad128266c1a812d0b487a62929adf1e28859a2783c8dc1c7f2a0",
+    "artifacts/libusb-1.0.29.tar.bz2":
+        "5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85",
+    "artifacts/normalized-manifest-0016.sha256":
+        "ea0d8d46050a1e46e5c49c2467924433185ed3a26e7feac0c03f00718fe838d5",
+    "artifacts/BUILD-PROVENANCE-0016.txt":
+        "d97491391ea060654597217f6aa77f9c7b840c93a718e21e90b81e2bb7f1b47a",
 }
 
 
@@ -52,6 +73,39 @@ class PublicSourceManifestTest(unittest.TestCase):
         self.assertTrue(KEYRING.is_file())
         self.assertEqual(EXPECTED_MANIFEST["spk/sources/nut-2.8.5.tar.gz.sig"], sha256(SIGNATURE.read_bytes()))
         self.assertEqual(EXPECTED_MANIFEST["spk/sources/nut-key.gpg"], sha256(KEYRING.read_bytes()))
+
+
+class PublicReleaseManifestTest(unittest.TestCase):
+    def test_release_manifest_has_exact_component_set_and_current_hashes(self):
+        self.assertTrue(RELEASE_MANIFEST.is_file())
+        parsed = {}
+        for line in RELEASE_MANIFEST.read_text().splitlines():
+            digest, relative = line.split("  ", 1)
+            self.assertNotIn(relative, parsed)
+            parsed[relative] = digest
+        self.assertEqual(EXPECTED_RELEASE_COMPONENTS, parsed)
+        for relative, digest in parsed.items():
+            component = ROOT / relative
+            self.assertTrue(component.is_file(), relative)
+            self.assertEqual(digest, sha256(component.read_bytes()), relative)
+
+    def test_release_notes_mark_rc_as_pending_fresh_preconfigured_install(self):
+        self.assertTrue(RELEASE_NOTES.is_file())
+        notes = " ".join(RELEASE_NOTES.read_text().lower().split())
+        for required in (
+            "v2.8.5-0016-rc1", "pre-release", "fresh package install",
+            "preconfigured dsm host",
+        ):
+            self.assertIn(required, notes)
+
+    def test_rc_tag_suffix_does_not_change_internal_spk_version(self):
+        self.assertTrue(CANONICAL_SPK.is_file())
+        with tarfile.open(CANONICAL_SPK, mode="r:") as archive:
+            info = archive.extractfile("INFO")
+            self.assertIsNotNone(info)
+            metadata = info.read().decode()
+        self.assertIn('version="2.8.5-0016"', metadata)
+        self.assertNotIn('version="2.8.5-0016-rc1"', metadata)
 
 
 class PublicSourceFetcherTest(unittest.TestCase):

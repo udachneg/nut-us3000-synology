@@ -11,6 +11,7 @@ ALLOWED_TOP = {
     "LICENSES",
     "README.md",
     "README_RU.md",
+    "release",
     "SECURITY.md",
     "THIRD_PARTY_NOTICES.md",
     "docs",
@@ -38,8 +39,23 @@ class PublicTreeTest(unittest.TestCase):
         return [Path(raw.decode()) for raw in completed.stdout.split(b"\0") if raw]
 
     def test_top_level_is_exact(self):
-        actual = {path.name for path in ROOT.iterdir() if path.name != ".git"}
+        actual = {
+            path.name
+            for path in ROOT.iterdir()
+            if path.name not in {".git", "artifacts"}
+        }
         self.assertEqual(ALLOWED_TOP, actual)
+
+    def test_local_binary_artifacts_are_ignored(self):
+        artifacts = ROOT / "artifacts"
+        if not artifacts.exists():
+            return
+        completed = subprocess.run(
+            ["git", "check-ignore", "--quiet", "artifacts/"],
+            cwd=ROOT,
+            check=False,
+        )
+        self.assertEqual(0, completed.returncode)
 
     def test_forbidden_private_paths_are_absent(self):
         bad = [

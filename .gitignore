@@ -6,3 +6,8 @@ build/
 dist/
 .tmp/
 *.spk
+
+# Keep public release metadata in Git, but not generated release binaries.
+release/*
+!release/*.md
+!release/*.sha256
