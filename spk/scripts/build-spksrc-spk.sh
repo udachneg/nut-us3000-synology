@@ -34,18 +34,6 @@ hash_file() {
     printf '%s\n' "$hash_value"
 }
 
-verify_sha256_checkpoint() {
-    checkpoint_root=$1
-    checkpoint_file=$2
-    if [ -x /usr/bin/sha256sum ]; then
-        (cd -P "$checkpoint_root" && /usr/bin/sha256sum -c "$checkpoint_file" >/dev/null)
-    elif [ -x /usr/bin/shasum ]; then
-        (cd -P "$checkpoint_root" && /usr/bin/shasum -a 256 -c "$checkpoint_file" >/dev/null)
-    else
-        return 1
-    fi
-}
-
 [ "$#" -eq 3 ] || exit 64
 project_root=$1
 spksrc_root=$2
@@ -93,17 +81,31 @@ for target in "$spksrc_root/cross/nut" "$spksrc_root/spk/nut-us3000"; do
     [ ! -e "$target" ] && [ ! -L "$target" ] || fail "spksrc overlay target already exists: $target"
 done
 
-artifact=$project_root/artifacts/nut-2.8.5.tar.gz
-provenance=$project_root/artifacts/PROVENANCE.txt
-checkpoint=$project_root/evidence/checkpoints/task-04.sha256
-for source in "$artifact" "$provenance" "$checkpoint"; do
+manifest=$project_root/spk/sources/source-manifest.sha256
+nut_artifact=$project_root/artifacts/nut-2.8.5.tar.gz
+libusb_artifact=$project_root/artifacts/libusb-1.0.29.tar.bz2
+signature=$project_root/spk/sources/nut-2.8.5.tar.gz.sig
+keyring=$project_root/spk/sources/nut-key.gpg
+for source in "$manifest" "$nut_artifact" "$libusb_artifact" "$signature" "$keyring"; do
     [ -f "$source" ] && [ ! -L "$source" ] || fail "verified source evidence is unavailable: $source"
 done
-verify_sha256_checkpoint "$project_root" "$checkpoint" || fail 'verified NUT source checkpoint mismatch'
-[ "$(hash_file "$artifact")" = 18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1 ] || \
+[ "$(hash_file "$nut_artifact")" = 18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1 ] || \
     fail 'NUT source archive hash mismatch'
-/usr/bin/grep -Fx 'SIGNER_TO_PRIMARY=BFA06D7C653B64C11DFDAF0442061031267D11B1=>B83459F776B90224988F36C0DE0184DA7043DCF7' "$provenance" >/dev/null || \
-    fail 'NUT signer evidence mismatch'
+[ "$(hash_file "$libusb_artifact")" = 5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85 ] || \
+    fail 'libusb source archive hash mismatch'
+[ "$(hash_file "$signature")" = 3211f48f7a312ae13770828d768a5e4d95c6866bfd96bf79df44665c8e6c85fb ] || \
+    fail 'NUT signature hash mismatch'
+[ "$(hash_file "$keyring")" = c12ead62f833ad128266c1a812d0b487a62929adf1e28859a2783c8dc1c7f2a0 ] || \
+    fail 'NUT keyring hash mismatch'
+[ "$(/usr/bin/awk 'END {print NR+0}' "$manifest")" -eq 4 ] || fail 'source manifest entry count mismatch'
+/usr/bin/grep -Fx '18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1  artifacts/nut-2.8.5.tar.gz' "$manifest" >/dev/null || \
+    fail 'NUT source manifest mismatch'
+/usr/bin/grep -Fx '3211f48f7a312ae13770828d768a5e4d95c6866bfd96bf79df44665c8e6c85fb  spk/sources/nut-2.8.5.tar.gz.sig' "$manifest" >/dev/null || \
+    fail 'NUT signature manifest mismatch'
+/usr/bin/grep -Fx 'c12ead62f833ad128266c1a812d0b487a62929adf1e28859a2783c8dc1c7f2a0  spk/sources/nut-key.gpg' "$manifest" >/dev/null || \
+    fail 'NUT keyring manifest mismatch'
+/usr/bin/grep -Fx '5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85  artifacts/libusb-1.0.29.tar.bz2' "$manifest" >/dev/null || \
+    fail 'libusb source manifest mismatch'
 
 "$MKDIR" -p "$spksrc_root/cross" "$spksrc_root/spk" "$spksrc_root/distrib"
 "$CP" -R "$overlay/cross/nut" "$spksrc_root/cross/nut"
@@ -162,22 +164,31 @@ trap cleanup 0 HUP INT TERM
 "$CP" "$attempt/icons/PACKAGE_ICON_256.PNG" "$recipe_source/icon-256.png"
 /bin/chmod 644 "$recipe_source/icon-256.png"
 
-dist_archive=$spksrc_root/distrib/nut-2.8.5.tar.gz
-if [ -e "$dist_archive" ] || [ -L "$dist_archive" ]; then
-    [ -f "$dist_archive" ] && [ ! -L "$dist_archive" ] || fail 'spksrc source cache target is unsafe'
-    [ "$(hash_file "$dist_archive")" = 18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1 ] || \
-        fail 'spksrc source cache conflicts with verified NUT source'
-else
-    "$CP" "$artifact" "$dist_archive"
-    /bin/chmod 644 "$dist_archive"
-fi
+for source_spec in \
+    "$nut_artifact|nut-2.8.5.tar.gz|18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1" \
+    "$libusb_artifact|libusb-1.0.29.tar.bz2|5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85"
+do
+    source=${source_spec%%|*}
+    remainder=${source_spec#*|}
+    name=${remainder%%|*}
+    expected=${remainder#*|}
+    dist_archive=$spksrc_root/distrib/$name
+    if [ -e "$dist_archive" ] || [ -L "$dist_archive" ]; then
+        [ -f "$dist_archive" ] && [ ! -L "$dist_archive" ] || fail 'spksrc source cache target is unsafe'
+        [ "$(hash_file "$dist_archive")" = "$expected" ] || \
+            fail "spksrc source cache conflicts with verified source: $name"
+    else
+        "$CP" "$source" "$dist_archive"
+        /bin/chmod 644 "$dist_archive"
+    fi
+done
 
 "$MAKE" -C "$toolchain_recipe" toolchain >&2 || \
     fail 'spksrc toolchain bootstrap failed'
 "$MAKE" -C "$spksrc_root/spk/nut-us3000" ARCH=epyc7002 TCVERSION=7.2 package >&2 || \
     fail 'spksrc package build failed'
 
-spk_name=nut-us3000_epyc7002-7.2_2.8.5-0015.spk
+spk_name=nut-us3000_epyc7002-7.2_2.8.5-0016.spk
 built_spk=$spksrc_root/packages/$spk_name
 [ -f "$built_spk" ] && [ ! -L "$built_spk" ] || fail 'expected spksrc package was not produced'
 final_spk=$output_dir/$spk_name

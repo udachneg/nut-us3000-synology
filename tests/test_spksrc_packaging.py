@@ -45,17 +45,36 @@ class SpksrcPackagingTest(unittest.TestCase):
         )
 
     def test_nut_digests_are_exactly_the_three_hashes_required_by_spksrc(self):
-        archive = ROOT / "artifacts/nut-2.8.5.tar.gz"
         digests = OVERLAY / "cross/nut/digests"
-        self.require_file(archive)
         self.require_file(digests)
-        payload = archive.read_bytes()
         self.assertEqual(
-            "nut-2.8.5.tar.gz SHA1 " + hashlib.sha1(payload).hexdigest() + "\n"
-            "nut-2.8.5.tar.gz SHA256 " + hashlib.sha256(payload).hexdigest() + "\n"
-            "nut-2.8.5.tar.gz MD5 " + hashlib.md5(payload).hexdigest() + "\n",
+            "nut-2.8.5.tar.gz SHA1 be2a4b425cd65fd029a8a14a4fcdc1d7f8ed4896\n"
+            "nut-2.8.5.tar.gz SHA256 18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1\n"
+            "nut-2.8.5.tar.gz MD5 5ad8ce61a788caf85cf62f301ba60e9f\n",
             digests.read_text(),
         )
+
+    def create_public_project_fixture(self, root: Path) -> tuple[Path, Path]:
+        project = root / "project"
+        shutil.copytree(ROOT / "spk", project / "spk")
+        (project / "artifacts").mkdir()
+        (project / "artifacts/nut-2.8.5.tar.gz").write_bytes(b"fixture nut archive\n")
+        (project / "artifacts/libusb-1.0.29.tar.bz2").write_bytes(b"fixture libusb archive\n")
+        fake_sha = root / "fake-sha256sum"
+        fake_sha.write_text(
+            "#!/bin/sh\n"
+            "set -eu\n"
+            "case ${1##*/} in\n"
+            "  nut-2.8.5.tar.gz) sum=18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1 ;;\n"
+            "  libusb-1.0.29.tar.bz2) sum=5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85 ;;\n"
+            "  nut-2.8.5.tar.gz.sig) sum=3211f48f7a312ae13770828d768a5e4d95c6866bfd96bf79df44665c8e6c85fb ;;\n"
+            "  nut-key.gpg) sum=c12ead62f833ad128266c1a812d0b487a62929adf1e28859a2783c8dc1c7f2a0 ;;\n"
+            "  *) exit 64 ;;\n"
+            "esac\n"
+            "printf '%s  %s\\n' \"$sum\" \"$1\"\n"
+        )
+        fake_sha.chmod(0o755)
+        return project, fake_sha
 
     def test_package_normalizes_every_runtime_elf_rpath(self):
         recipe = OVERLAY / "spk/nut-us3000/Makefile"
@@ -173,6 +192,7 @@ class SpksrcPackagingTest(unittest.TestCase):
             self.require_file(required)
 
         root = self.temp_root()
+        project, fake_sha = self.create_public_project_fixture(root)
         spksrc = root / "spksrc"
         output = root / "output"
         fake_bin = root / "fake-bin"
@@ -215,7 +235,7 @@ class SpksrcPackagingTest(unittest.TestCase):
             "    [ \"$5\" = package ]\n"
             "    root=$(cd \"$2/../..\" && pwd -P)\n"
             "    mkdir -p \"$root/packages\"\n"
-            "    printf 'fixture spk\\n' > \"$root/packages/nut-us3000_epyc7002-7.2_2.8.5-0015.spk\"\n"
+            "    printf 'fixture spk\\n' > \"$root/packages/nut-us3000_epyc7002-7.2_2.8.5-0016.spk\"\n"
             "    ;;\n"
             "  *) exit 97 ;;\n"
             "esac\n"
@@ -226,18 +246,19 @@ class SpksrcPackagingTest(unittest.TestCase):
         text = BUILD_SCRIPT.read_text()
         text = text.replace("GIT=/usr/bin/git", f"GIT={fake_git}")
         text = text.replace("MAKE=/usr/bin/make", f"MAKE={fake_make}")
+        text = text.replace("/usr/bin/sha256sum", str(fake_sha))
         transformed.write_text(text)
         transformed.chmod(0o755)
 
         completed = subprocess.run(
-            ["/bin/sh", str(transformed), str(ROOT), str(spksrc), str(output)],
+            ["/bin/sh", str(transformed), str(project), str(spksrc), str(output)],
             env=os.environ | {"MAKE_LOG": str(make_log)},
             text=True,
             capture_output=True,
             check=False,
         )
         self.assertEqual(0, completed.returncode, completed.stderr)
-        self.assertEqual("SPKSRC_SPK_COMPLETE nut-us3000_epyc7002-7.2_2.8.5-0015.spk\n", completed.stdout)
+        self.assertEqual("SPKSRC_SPK_COMPLETE nut-us3000_epyc7002-7.2_2.8.5-0016.spk\n", completed.stdout)
         self.assertEqual(
             "CALL_BEGIN\n"
             "-C\n"
@@ -298,28 +319,22 @@ class SpksrcPackagingTest(unittest.TestCase):
                 (PACKAGE / "wizard" / name).read_bytes(),
                 (spksrc / "spk/nut-us3000/src/wizard" / name).read_bytes(),
             )
-        self.assertEqual(b"fixture spk\n", (output / "nut-us3000_epyc7002-7.2_2.8.5-0015.spk").read_bytes())
+        self.assertEqual(b"fixture spk\n", (output / "nut-us3000_epyc7002-7.2_2.8.5-0016.spk").read_bytes())
         self.assertFalse((output / ".nut-us3000-spksrc-build").exists())
 
     def test_build_rejects_mutated_verified_source_evidence_before_make(self):
         self.require_file(BUILD_SCRIPT)
         root = self.temp_root()
-        project = root / "project"
+        project, fake_sha = self.create_public_project_fixture(root)
         spksrc = root / "spksrc"
         output = root / "output"
         fake_bin = root / "fake-bin"
-        project.mkdir()
         spksrc.mkdir()
         output.mkdir()
         fake_bin.mkdir()
 
-        for directory in ("spk", "artifacts", "evidence/checkpoints", "scripts", "tests"):
-            source = ROOT / directory
-            destination = project / directory
-            if source.is_dir():
-                shutil.copytree(source, destination)
-        with (project / "artifacts/nut-key.gpg").open("ab") as stream:
-            stream.write(b"MUTATED\n")
+        manifest = project / "spk/sources/source-manifest.sha256"
+        manifest.write_text(manifest.read_text().replace("18bf32e5", "08bf32e5", 1))
 
         (spksrc / "mk").mkdir()
         (spksrc / "mk/spksrc.spk.mk").write_text("fixture\n")
@@ -344,6 +359,7 @@ class SpksrcPackagingTest(unittest.TestCase):
         text = (project / "spk/scripts/build-spksrc-spk.sh").read_text()
         text = text.replace("GIT=/usr/bin/git", f"GIT={fake_git}")
         text = text.replace("MAKE=/usr/bin/make", f"MAKE={fake_make}")
+        text = text.replace("/usr/bin/sha256sum", str(fake_sha))
         transformed.write_text(text)
         transformed.chmod(0o755)
         completed = subprocess.run(
