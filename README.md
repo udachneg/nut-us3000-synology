@@ -6,9 +6,10 @@ An unofficial native Synology DSM package that connects one UGREEN US3000 UPS
 directly over USB and exposes it to DSM through a host-local NUT 2.8.5 server.
 No runtime container is used on the NAS.
 
-Current prerelease: **[2.8.5-0022 RC1](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022-rc1)**.
-Upgrade and keep-data reinstall have been checked. Delete-data clean installation
-using this public guide is still pending; this is not a final stable release.
+Current release: **[2.8.5-0022](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022)**.
+Upgrade, keep-data reinstall and delete-data clean installation using the public
+guide passed on the documented host. The final SPK is byte-identical to RC1;
+it was not rebuilt. See [validation scope and limits](docs/VALIDATION.md).
 
 ## Tested compatibility
 
@@ -44,8 +45,7 @@ compatibility claim.
 
 ## Download and verify
 
-Download these two files from **[RC 0022](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022-rc1)**
-(a prerelease may not appear as Latest):
+Download these two files from **[release 0022](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022)**:
 
 - `nut-us3000_epyc7002-7.2_2.8.5-0022.spk`
 - `nut-us3000_epyc7002-7.2_2.8.5-0022.spk.sha256`
@@ -133,7 +133,7 @@ and firewall settings have independent badges: 🟢 checked, 🔴 problem/mismat
 than 10 minutes is stale regardless of color. Refresh DSM if necessary. A green
 firewall badge checks configuration and rule ordering, not external connectivity.
 
-For this RC acceptance, wait at least 10 minutes after setup and revisit Device
+To check your installation, wait at least 10 minutes after setup and revisit Device
 Information and the package card. This observes installation; it is not a power
 interruption test. A working connection alone does not prove safe shutdown.
 

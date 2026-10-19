@@ -74,17 +74,22 @@ class Publication0022Test(unittest.TestCase):
         for name, value in manifest(ROOT / 'spk/sources/source-manifest.sha256').items():
             self.assertEqual(value, digest(ROOT / name), name)
 
-    def test_instructions_and_pending_gate(self):
+    def test_instructions_and_completed_gate(self):
         for name, delay, deny in [('README.md', '**5 minutes**', 'deny'),
                                   ('README_RU.md', '**5 минут**', 'запрет')]:
             text = (ROOT / name).read_text()
-            for token in ('v2.8.5-0022-rc1', SPK, SPK_HASH, '10.255.255.1', 'TCP 3493', delay,
+            for token in ('v2.8.5-0022)', SPK, SPK_HASH, '10.255.255.1', 'TCP 3493', delay,
                           'Arc Apps & Permissions', 'RAM', '65535', deny):
                 self.assertIn(token, text)
         validation = (ROOT / 'docs/VALIDATION.md').read_text()
-        for token in ('RC_PENDING_PUBLIC_CLEAN_INSTALL', 'did **not** produce a formal PASS',
-                      'keep-data', 'preconfigured host', 'not part', 'explicit approval'):
+        for token in ('FINAL_TESTED_HOST', 'did **not** produce a formal PASS',
+                      'keep-data', 'preconfigured host', 'not part', 'explicit approval',
+                      '614 seconds', 'not separately captured', 'not repeated'):
             self.assertIn(token, validation)
+        notes = (ROOT / 'release/RELEASE-NOTES-0022.md').read_text()
+        for token in (SPK_HASH, 'v2.8.5-0022/README_RU.md', 'no rebuild',
+                      '614 seconds', 'formal PASS'):
+            self.assertIn(token, notes)
 
     def test_current_document_links_resolve(self):
         paths = [ROOT / n for n in ('README.md', 'README_RU.md', 'docs/BUILDING.md',

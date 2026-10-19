@@ -1,6 +1,8 @@
-# Validation status — 2.8.5-0022 RC1
+# Validation status — 2.8.5-0022
 
-Status: `RC_PENDING_PUBLIC_CLEAN_INSTALL` — not a final stable release.
+Status: `FINAL_TESTED_HOST` — final release approved on 2026-10-20 after the
+public clean-install gate passed. This is not certification for other hosts.
+The SPK and package sources are unchanged from RC1; no rebuild was performed.
 
 Artifact: `nut-us3000_epyc7002-7.2_2.8.5-0022.spk`
 SHA-256: `cd3fbec1def596f4048a0280e6734e4d37d66c10c77e84a3763af3988c2ca72f`
@@ -20,6 +22,7 @@ Other DSM builds, official Synology hardware and other UPS devices are unverifie
 | 0022 delay diagnostics | Actual INFO writer checked for 300 seconds, other/missing delay, unchanged boot/freshness timers. Three checks passed. |
 | 0021 → 0022 upgrade, 2026-10-19 | Passed; version/running state, preserved NUT configuration, local endpoints, DSM connection and 300-second delay verified. No NAS reboot or power interruption. |
 | 0022 keep-data uninstall/reinstall, 2026-10-19 | Passed through Package Center. Removal stopped RAM services and removed listeners/alias; exact USB interface restored. Reinstall preserved configuration bytes/modes, restored service and DSM connection with 300 seconds. NAS boot and unrelated container start times unchanged. |
+| 0022 public-guide delete-data clean install, 2026-10-19–20 (Europe/Moscow) | Passed. Package data were empty before manual reinstall; fresh configuration and its manifest validated. Read-only postflight passed 614 seconds after DSM setup. RAM process identities, both NUT endpoints, DSM connection, 300-second delay, USB and firewall checks passed. NAS boot and unrelated container start times unchanged. |
 | Inherited RAM lifecycle evidence | Isolated Linux/systemd VM tests, DSM-like stop ordering and queue inspection, plus 0021 ordinary stop/start and live recovery observations. Runtime server/driver/controller/hooks are unchanged between 0021 and 0022. These were not rerun for text/version changes. |
 
 Private logs and infrastructure identifiers are deliberately not distributed.
@@ -38,25 +41,32 @@ this is an upper bound on availability, not its exact first instant.
 The old temporary observer gate did **not** produce a formal PASS: it used an
 ExecMain timestamp that remained zero. The observer was corrected and checked
 locally, but no second full power test was run with it. The observer is not part
-of the SPK. Do not interpret this RC as a new formal safe-mode acceptance for 0022,
+of the SPK. Do not interpret this final release as a new formal safe-mode acceptance for 0022,
 nor as a guarantee of reboot/recovery on arbitrary DSM installations.
 
-## Pending public gate
+## Completed public clean-install gate
 
-Download this RC from GitHub, verify its checksum, perform delete-data uninstall
-and manual reinstall through Package Center using README_RU.md or README.md.
-Keep mains, UPS load and NAS running. No power test or NAS reboot is part of this gate.
+The operator installed RC1 manually through Package Center following README_RU.md,
+after a controlled delete-data uninstall and verified backup. Mains, UPS load and
+NAS remained running. No power test or NAS reboot was performed.
 
 It is a fresh package install on a preconfigured host: persistent DSM Firewall
-deny and DSM UPS form values are host settings, not package data. Confirm them
-explicitly; do not mistake inherited host settings for automatic provisioning.
+deny and DSM UPS form values are host settings, not package data. They were
+checked explicitly; their presence does not demonstrate automatic provisioning.
+Empty package directories and five tiny RAM coordination files remained by the
+lifecycle contract, but no old package configuration, state or home data were reused.
 
-After setup and at least 10 minutes observation, verify version/status, fresh
-package data, exact USB identity/permissions, RAM process identities, both local
-NUT endpoints and exact listeners/alias, native helper audit, DSM connection,
-5-minute delay and persistent firewall deny. Confirm ordinary NAS workloads stayed
-running. Green package badges alone are insufficient evidence for the whole gate.
+At 00:04:54 on 2026-10-20 (Europe/Moscow), the read-only postflight passed after
+614 seconds since DSM setup: version/status, fresh package data, exact USB
+identity/permissions, unchanged RAM process identities, both local NUT endpoints,
+exact listeners/alias, native helper audit, DSM connection, 5-minute delay and
+persistent firewall deny. DSM showed UGREEN US3000 connected with 100% charge.
+The source SPK checksum was verified before RC publication, and six installed
+runtime files matched that SPK in postflight; the operator-selected downloaded
+archive was not separately captured. Observation used timestamped samples, not
+continuous packet capture or proof against every transient interruption.
 
-Promotion to a final release requires completion of this gate and explicit approval.
-The promoted SPK must retain this exact RC hash; any changed runtime requires its
-own relevant checks, not a silent asset replacement.
+The owner gave explicit approval for final publication on 2026-10-20.
+Previously passed build, runtime, VM and power tests were not repeated for this
+documentation-only promotion. The final SPK retains the exact RC hash above;
+any changed runtime requires its own relevant checks, not a silent asset replacement.

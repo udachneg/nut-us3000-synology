@@ -19,8 +19,8 @@ from the checkout root using `shasum -a 256 -c release/PACKAGE-SOURCE-0022.sha25
 Every distributed `spk/` file is byte-identical to the build-time snapshot.
 One non-source `__pycache__/*.pyc` cache entry from that private snapshot is
 excluded: it is not distributed, and the builder invokes `generate-icons.py`
-directly. No source file or SPK bytes were changed. The RC is the
-previously audited binary, not a new build produced during publication.
+directly. No source file or SPK bytes were changed. The final release uses the
+previously audited RC1 binary, not a new build produced during publication.
 
 The NUT detached signature and release keyring are tracked under
 `spk/sources/`. Synology Toolkit archives, sysroot, Docker image layers and
@@ -36,7 +36,7 @@ build volumes are fetched locally and are not redistributed.
 
 ## Publication checks
 
-Download all RC0022 assets into `artifacts/` first (not the source archive into that directory).
+Download all release 0022 assets into `artifacts/` first (not the source archive into that directory).
 The following checks validate the public source/asset closure and docs; they do not
 rerun the private VM/NAS lifecycle tests. Historical 0016 tests are documented in
 `tests/historical_0016/README.md`.
