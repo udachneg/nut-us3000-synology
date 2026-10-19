@@ -1,14 +1,14 @@
 SPK_NAME = nut-us3000
 SPK_VERS = 2.8.5
-SPK_REV = 0016
+SPK_REV = 0022
 SPK_ICON = src/icon-256.png
 
 DEPENDS = cross/nut
 
 MAINTAINER = Hevtech
 MAINTAINER_URL = https://github.com/udachneg/nut-us3000-synology
-DESCRIPTION = Native USB driver and host-local NUT 2.8.5 endpoint for UGREEN US3000.
-DESCRIPTION_RUS = Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000.
+DESCRIPTION = ◆ STATUS: 🟡 not checked yet · Native NUT 2.8.5 for UGREEN US3000 ◆ DSM SETUP: Synology UPS Server · IP 10.255.255.1 · Delay 5 minutes ◆ FIREWALL: deny external TCP 3493 above allow rules ◆ IMPORTANT: Running means the controller is active, not proof of UPS protection ◆ HELP: NUT US3000 in the DSM main menu (RU/EN)
+DESCRIPTION_RUS = ◆ СОСТОЯНИЕ: 🟡 ещё не проверено · Нативный NUT 2.8.5 для UGREEN US3000 ◆ НАСТРОЙКА DSM: Сервер ИБП Synology · IP 10.255.255.1 · Задержка 5 минут ◆ БРАНДМАУЭР: запретить внешний TCP 3493 выше разрешающих правил ◆ ВАЖНО: Выполняется — контроллер активен, не гарантия защиты ИБП ◆ СПРАВКА: NUT US3000 в главном меню DSM · RU/EN
 DISPLAY_NAME = NUT US3000
 HOMEPAGE = https://github.com/udachneg/nut-us3000-synology
 LICENSE = GPL-2.0-or-later AND LGPL-2.1-or-later
@@ -18,7 +18,8 @@ OS_MIN_VER = 7.2.2-72806
 REQUIRED_MIN_DSM = 7.2
 REQUIRED_MAX_DSM = 7.2
 STARTABLE = yes
-NO_SERVICE_SHORTCUT = yes
+DSM_UI_CONFIG = src/payload/app/config
+DSM_APP_NAME = com.synocommunity.packages.nut-us3000
 DISABLE_GITHUB_MAINTAINER = 1
 
 SSS_SCRIPT = src/start-stop-status
@@ -41,7 +42,7 @@ nut_us3000_service_finalize:
 	done
 
 nut_us3000_extra_install:
-	$(TC_PATH)$(TC_PREFIX)gcc -std=c11 -Wall -Wextra -Werror -Os src/native/nut-us3000-hostctl.c -o $(STAGING_DIR)/libexec/nut/nut-us3000-hostctl
+	$(TC_PATH)$(TC_PREFIX)gcc -D_GNU_SOURCE -std=c11 -Wall -Wextra -Werror -Os src/native/ram-hostctl.c src/native/ram-bridge.c src/native/ram-exec.c src/native/ram-runtime.c src/native/ram-platform.c src/native/ram-files.c -o $(STAGING_DIR)/libexec/nut/nut-us3000-hostctl
 	$(TC_PATH)$(TC_PREFIX)gcc -std=c11 -Wall -Wextra -Werror -Os -D_POSIX_C_SOURCE=200809L src/native/nut-us3000-controller.c -o $(STAGING_DIR)/libexec/nut/nut-us3000-controller
 	chmod 750 $(STAGING_DIR)/libexec/nut/nut-us3000-hostctl
 	chmod 750 $(STAGING_DIR)/libexec/nut/nut-us3000-controller
@@ -58,6 +59,7 @@ nut_us3000_extra_install:
 	install -m 644 src/templates/ups.conf $(STAGING_DIR)/share/nut-us3000/templates/ups.conf
 	install -m 644 src/templates/upsd.conf $(STAGING_DIR)/share/nut-us3000/templates/upsd.conf
 	install -m 644 src/payload/app/helptoc.conf $(STAGING_DIR)/app/helptoc.conf
+	install -m 644 src/payload/app/index.html $(STAGING_DIR)/app/index.html
 	install -m 644 src/payload/app/help/enu/nut-us3000.html $(STAGING_DIR)/app/help/enu/nut-us3000.html
 	install -m 644 src/payload/app/help/rus/nut-us3000.html $(STAGING_DIR)/app/help/rus/nut-us3000.html
 	install -m 644 src/payload/app/texts/enu/strings $(STAGING_DIR)/app/texts/enu/strings

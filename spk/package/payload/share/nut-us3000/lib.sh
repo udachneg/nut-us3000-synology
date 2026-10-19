@@ -3,6 +3,24 @@
 # This file is sourced by DSM lifecycle scripts.  Keep it side-effect free:
 # every public or private helper is namespaced and no shell options are changed.
 
+# Presentation only: fixed helper vocabulary, bounded best-effort call.
+nutus3000_description_publish() {
+    case ${1:-} in pending|waiting|healthy|degraded|unavailable|error|stopped) ;; *) return 0 ;; esac
+    /usr/bin/timeout -k 1 2 "$SYNOPKG_PKGDEST/libexec/nut/nut-us3000-hostctl" \
+        "description-$1" >/dev/null 2>&1 || :
+    return 0
+}
+
+nutus3000_description_finish() {
+    # Only called by explicit start/stop/retry EXIT traps, never status.
+    trap - EXIT
+    nutus3000_description_rc=$1
+    nutus3000_description_result=$2
+    case $nutus3000_description_rc in 0|75) ;; *) nutus3000_description_result=error ;; esac
+    nutus3000_description_publish "$nutus3000_description_result"
+    exit "$nutus3000_description_rc"
+}
+
 nutus3000_canonical_dir() {
     [ $# -eq 1 ] || return 1
     [ -d "$1" ] || return 1
@@ -243,6 +261,7 @@ nutus3000_validate_config() {
 nutus3000_probe_usb() {
     nutus3000_init || return 1
     nutus3000_vu_matches=0
+    nutus3000_vu_pending=0
     for nutus3000_vu_device in "$nutus3000_usb"/*; do
         [ -d "$nutus3000_vu_device" ] || continue
         nutus3000_vu_vendor=$nutus3000_vu_device/idVendor
@@ -253,26 +272,36 @@ nutus3000_probe_usb() {
             || [ -e "$nutus3000_vu_serial" ] || [ -L "$nutus3000_vu_serial" ]; then
             [ -f "$nutus3000_vu_vendor" ] && [ ! -L "$nutus3000_vu_vendor" ] || return 1
             [ -f "$nutus3000_vu_product" ] && [ ! -L "$nutus3000_vu_product" ] || return 1
-            [ -f "$nutus3000_vu_serial" ] && [ ! -L "$nutus3000_vu_serial" ] || return 1
         else
             continue
         fi
         nutus3000_vu_vendor_value=$(nutus3000_read_one_line "$nutus3000_vu_vendor") || continue
         nutus3000_vu_product_value=$(nutus3000_read_one_line "$nutus3000_vu_product") || continue
         [ "$nutus3000_vu_vendor_value:$nutus3000_vu_product_value" = 2b89:ffff ] || continue
-        [ "$(nutus3000_read_one_line "$nutus3000_vu_serial")" = DC600 ] || return 1
+        nutus3000_vu_matches=$((nutus3000_vu_matches + 1))
+        if [ ! -e "$nutus3000_vu_serial" ] && [ ! -L "$nutus3000_vu_serial" ]; then
+            nutus3000_vu_pending=1
+        else
+            [ -f "$nutus3000_vu_serial" ] && [ ! -L "$nutus3000_vu_serial" ] || return 1
+            [ "$(nutus3000_read_one_line "$nutus3000_vu_serial")" = DC600 ] || return 1
+        fi
         nutus3000_vu_interfaces=0
         for nutus3000_vu_interface in "$nutus3000_vu_device":*; do
             [ -d "$nutus3000_vu_interface" ] || continue
-            nutus3000_vu_number=$nutus3000_vu_interface/bInterfaceNumber
-            [ -f "$nutus3000_vu_number" ] && [ ! -L "$nutus3000_vu_number" ] || continue
-            [ "$(nutus3000_read_one_line "$nutus3000_vu_number")" = 00 ] || continue
             nutus3000_vu_interfaces=$((nutus3000_vu_interfaces + 1))
+            nutus3000_vu_number=$nutus3000_vu_interface/bInterfaceNumber
+            if [ ! -e "$nutus3000_vu_number" ] && [ ! -L "$nutus3000_vu_number" ]; then
+                nutus3000_vu_pending=1
+                continue
+            fi
+            [ -f "$nutus3000_vu_number" ] && [ ! -L "$nutus3000_vu_number" ] || return 1
+            [ "$(nutus3000_read_one_line "$nutus3000_vu_number")" = 00 ] || return 1
         done
-        [ "$nutus3000_vu_interfaces" -eq 1 ] || return 1
-        nutus3000_vu_matches=$((nutus3000_vu_matches + 1))
+        [ "$nutus3000_vu_interfaces" -le 1 ] || return 1
+        [ "$nutus3000_vu_interfaces" -ne 0 ] || nutus3000_vu_pending=1
     done
     [ "$nutus3000_vu_matches" -le 1 ] || return 1
+    [ "$nutus3000_vu_pending" -eq 0 ] || return 75
     [ "$nutus3000_vu_matches" -eq 1 ] && return 0
     return 75
 }
@@ -901,7 +930,7 @@ nutus3000_health() {
 $nutus3000_h_output
 EOF
     [ "$nutus3000_h_driver" -eq 1 ] || return 1
-    [ "$nutus3000_h_driver_value" = usbhid-ups ] || return 1
+    [ "$nutus3000_h_driver_value" = nutus3000-hid ] || return 1
     [ "$nutus3000_h_mfr" -eq 1 ] || return 1
     [ "$nutus3000_h_mfr_value" = UGREEN ] || return 1
     [ "$nutus3000_h_model" -eq 1 ] || return 1
@@ -946,10 +975,17 @@ nutus3000_core_state() {
     if [ "$nutus3000_cs_driver_count:$nutus3000_cs_server_count" = 0:0 ]; then
         return 75
     fi
-    [ "$nutus3000_cs_driver_count:$nutus3000_cs_server_count" = 1:1 ] || return 1
+    case $nutus3000_cs_driver_count:$nutus3000_cs_server_count in
+        1:0|1:1) ;;
+        *) return 1 ;;
+    esac
     nutus3000_validate_live_identity "$nutus3000_driver_identity" "$nutus3000_driver_pidfile" "$nutus3000_driver_exe" || return 1
     nutus3000_cs_identity=$(nutus3000_read_identity "$nutus3000_driver_identity" "$nutus3000_driver_exe") || return 1
     [ "$nutus3000_cs_identity" = "$nutus3000_cs_driver_tuple" ] || return 1
+    # DSM can terminate upsd while leaving this exact driver alive. The retry
+    # step must use validated stop/release before attempting a fresh start;
+    # stop_server still rejects a reused or ambiguous saved server identity.
+    [ "$nutus3000_cs_server_count" -ne 0 ] || return 76
     nutus3000_validate_live_identity "$nutus3000_upsd_identity" "$nutus3000_upsd_pidfile" "$nutus3000_upsd_exe" || return 1
     nutus3000_cs_identity=$(nutus3000_read_identity "$nutus3000_upsd_identity" "$nutus3000_upsd_exe") || return 1
     [ "$nutus3000_cs_identity" = "$nutus3000_cs_server_tuple" ]

@@ -146,7 +146,7 @@ def expected_outer():
 def expected_payload():
     result = {}
     for name in (
-        "app", "app/help", "app/help/enu", "app/help/rus", "app/texts",
+        "app", "app/images", "app/help", "app/help/enu", "app/help/rus", "app/texts",
         "app/texts/enu", "app/texts/rus", "bin", "lib", "libexec",
         "libexec/nut", "sbin", "share",
         "share/nut-us3000", "share/nut-us3000/templates",
@@ -169,6 +169,8 @@ def expected_payload():
     ):
         result[name] = ("file", 0o755)
     for name in (
+        "app/config",
+        "app/index.html",
         "app/helptoc.conf",
         "app/help/enu/nut-us3000.html",
         "app/help/rus/nut-us3000.html",
@@ -176,6 +178,8 @@ def expected_payload():
         "app/texts/rus/strings",
     ):
         result[name] = ("file", 0o644)
+    for size in (16, 24, 32, 48, 64, 72, 256):
+        result[f"app/images/nut-us3000-{size}.png"] = ("file", 0o644)
     return result
 
 
@@ -213,9 +217,9 @@ def parse_info(data, package_digest):
         fields[match.group(1)] = match.group(2)
     expected = {
         "package": "nut-us3000",
-        "version": "2.8.5-0016",
-        "description": "Native USB driver and host-local NUT 2.8.5 endpoint for UGREEN US3000.",
-        "description_rus": "Нативный USB-драйвер и локальный NUT 2.8.5 для UGREEN US3000.",
+        "version": "2.8.5-0022",
+        "description": "◆ STATUS: 🟡 not checked yet · Native NUT 2.8.5 for UGREEN US3000 ◆ DSM SETUP: Synology UPS Server · IP 10.255.255.1 · Delay 5 minutes ◆ FIREWALL: deny external TCP 3493 above allow rules ◆ IMPORTANT: Running means the controller is active, not proof of UPS protection ◆ HELP: NUT US3000 in the DSM main menu (RU/EN)",
+        "description_rus": "◆ СОСТОЯНИЕ: 🟡 ещё не проверено · Нативный NUT 2.8.5 для UGREEN US3000 ◆ НАСТРОЙКА DSM: Сервер ИБП Synology · IP 10.255.255.1 · Задержка 5 минут ◆ БРАНДМАУЭР: запретить внешний TCP 3493 выше разрешающих правил ◆ ВАЖНО: Выполняется — контроллер активен, не гарантия защиты ИБП ◆ СПРАВКА: NUT US3000 в главном меню DSM · RU/EN",
         "arch": "epyc7002",
         "maintainer": "Hevtech",
         "maintainer_url": "https://github.com/udachneg/nut-us3000-synology",
@@ -427,6 +431,8 @@ def main(argv):
     for name in ("ups.conf", "upsd.conf"):
         require_bytes(payload, f"share/nut-us3000/templates/{name}", project_root / "spk/package/templates" / name)
     for relative in (
+        "config",
+        "index.html",
         "helptoc.conf",
         "help/enu/nut-us3000.html",
         "help/rus/nut-us3000.html",

@@ -6,9 +6,9 @@ An unofficial native Synology DSM package that connects one UGREEN US3000 UPS
 directly over USB and exposes it to DSM through a host-local NUT 2.8.5 server.
 No runtime container is used on the NAS.
 
-The current public package version is `2.8.5-0016`. This release starts as a
-release candidate until its public fresh package install on a preconfigured
-host is complete.
+Current prerelease: **[2.8.5-0022 RC1](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022-rc1)**.
+Upgrade and keep-data reinstall have been checked. Delete-data clean installation
+using this public guide is still pending; this is not a final stable release.
 
 ## Tested compatibility
 
@@ -32,6 +32,11 @@ compatibility claim.
 - This package does not command UPS load-off, forced shutdown or FSD.
 - DSM remains responsible for safe-mode timing, shutdown policy and standard
   notifications.
+- The server and USB driver run from RAM. During a confirmed safe shutdown they
+  survive package stopping and data-volume unmounting so DSM can observe mains
+  restoration. Ordinary package stop/uninstall terminates the RAM services.
+  Recovery on arbitrary DSM versions is not guaranteed; see
+  [validation limits](docs/VALIDATION.md).
 - `Package Center: Running` proves only that the retry controller is active. It
   does not prove that DSM receives a live UPS state.
 - The package is provided without warranty. Test the complete setup before
@@ -39,19 +44,24 @@ compatibility claim.
 
 ## Download and verify
 
-Download these two files from [GitHub Releases](https://github.com/udachneg/nut-us3000-synology/releases):
+Download these two files from **[RC 0022](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022-rc1)**
+(a prerelease may not appear as Latest):
 
-- `nut-us3000_epyc7002-7.2_2.8.5-0016.spk`
-- `nut-us3000_epyc7002-7.2_2.8.5-0016.spk.sha256`
+- `nut-us3000_epyc7002-7.2_2.8.5-0022.spk`
+- `nut-us3000_epyc7002-7.2_2.8.5-0022.spk.sha256`
 
 Verify the SPK SHA-256 on your computer before installation. For example, on
 macOS or Linux:
 
 ```console
-shasum -a 256 nut-us3000_epyc7002-7.2_2.8.5-0016.spk
+shasum -a 256 nut-us3000_epyc7002-7.2_2.8.5-0022.spk
 ```
 
 The result must exactly match the published `.sha256` file.
+This build's SHA-256: `cd3fbec1def596f4048a0280e6734e4d37d66c10c77e84a3763af3988c2ca72f`.
+The SPK is not signed with a Synology certificate. A checksum verifies integrity,
+not trust in the download source. Read the warnings and license and accept only
+if you agree.
 
 ## One-time DSM Firewall prerequisite
 
@@ -80,21 +90,30 @@ one-time setting.
 6. Allow up to 10 minutes after system startup for the first delayed recovery
    attempt if USB was not ready immediately.
 
+The package supplies its own helper, prepares the RAM services and grants access
+only to the selected USB device. Old installation remnants and a manual udev rule
+are not required. DSM UPS settings and the persistent firewall rule remain manual.
+If DSM offers to open TCP 3493, do not allow network access: this setup needs a
+**deny**, not an open port.
+
 ## Configure DSM UPS support
 
 Open **Control Panel → Hardware & Power → UPS**:
 
 1. Enable UPS support.
 2. Choose **Synology UPS Server**.
-3. Set the safe-mode delay to **10 minutes**.
+3. Choose a custom safe-mode delay of **5 minutes**.
 4. Enter the network UPS server address **10.255.255.1**.
-5. Apply the settings.
+5. Apply and open Device Information.
+
+Five minutes is the selected delay, not a guarantee of battery runtime under your
+load. Upgrading the package does not automatically replace a saved ten-minute delay.
 
 `10.255.255.1` is a permanent host-local alias created before the package
 service starts. It does not depend on the NAS LAN address and is not intended
 for access from another device.
 
-## Verify actual protection
+## Verify connection and settings
 
 Open **Device Information** on the DSM UPS page. Require all of the following:
 
@@ -108,6 +127,16 @@ Do not treat the displayed runtime value `65535` seconds as a reliable runtime
 estimate. Also confirm that DSM standard notifications are enabled for UPS
 disconnect and reconnect events.
 
+The package description separates sections with ◆. Connection state, DSM settings
+and firewall settings have independent badges: 🟢 checked, 🔴 problem/mismatch,
+🟡 unknown/waiting; ⚪ package stopped. Check the UTC observation time: text older
+than 10 minutes is stale regardless of color. Refresh DSM if necessary. A green
+firewall badge checks configuration and rule ordering, not external connectivity.
+
+For this RC acceptance, wait at least 10 minutes after setup and revisit Device
+Information and the package card. This observes installation; it is not a power
+interruption test. A working connection alone does not prove safe shutdown.
+
 ## Boot and retry behavior
 
 The package makes one immediate USB attempt. If USB is unavailable during
@@ -118,7 +147,7 @@ alias and firewall audits pass.
 
 After a successful retry, DSM reconnects to the same `10.255.255.1` endpoint.
 Loss of the UPS server does not itself instruct DSM to enter safe mode; DSM's
-configured 10-minute policy applies to an actual battery-power event.
+configured 5-minute policy applies to an actual battery-power event.
 
 ## Optional USB reconnect check
 
@@ -132,7 +161,7 @@ Perform this only while mains power and the protected load remain connected:
 
 ## Upgrade and uninstall
 
-Install a newer signed release through **Package Center → Manual Install**.
+Install a newer verified release through **Package Center → Manual Install**.
 The package validates existing configuration before upgrade and preserves it.
 
 The uninstall wizard offers two modes:
@@ -144,6 +173,16 @@ The uninstall wizard offers two modes:
 Neither mode removes DSM UPS settings or the persistent DSM Firewall rule.
 Review those host settings separately after uninstall.
 
+Before uninstalling, disable UPS support in DSM and apply; monitoring is temporarily
+unavailable. Remove only NUT US3000 through Package Center. For a clean install,
+select Delete package data: this erases package settings, so retain a backup first
+if needed. Reinstall the same verified SPK, repeat DSM UPS configuration and verify
+the connection. Do not manually remove shared DSM configuration or other packages.
+
+This is a fresh package install on a preconfigured host, not a NAS reset. The
+persistent firewall deny and DSM UPS form values may remain. The package does not
+create these host settings for the user.
+
 ## After a DSM update
 
 Treat a different DSM build as untested until verified. After every update:
@@ -151,7 +190,7 @@ Treat a different DSM build as untested until verified. After every update:
 1. confirm that NUT US3000 is running in Package Center;
 2. confirm the live UPS identity and state in DSM Device Information;
 3. confirm that DSM still uses Synology UPS Server `10.255.255.1` and the
-   10-minute delay;
+   5-minute delay;
 4. confirm that the first enabled DSM Firewall rule still denies TCP 3493 from
    all sources on all interfaces;
 5. perform the optional USB reconnect check before relying on protection.

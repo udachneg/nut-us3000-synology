@@ -2,24 +2,40 @@
 <html class="img-no-display" lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font: 1rem/1.6 system-ui, sans-serif; color: #203149; max-width: 54rem; margin: 2rem auto; padding: 0 1.25rem 2rem; }
+    h2 { margin-top: 2rem; }
+    a { color: #0864c8; }
+    strong { font-weight: 650; }
+  </style>
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
   <title>NUT US3000 Help</title>
 </head>
 <body>
   <h1>NUT US3000</h1>
+  <nav><a href="../../index.html">Language / Выбор языка</a></nav>
 
   <h2 id="setup">Setup</h2>
   <p>This native package supports one USB-connected UGREEN US3000 with identity <strong>2b89:ffff</strong>, serial DC600. It uses NUT 2.8.5 and no runtime container.</p>
-  <p>In Control Panel &gt; Hardware &amp; Power &gt; UPS, select <strong>Synology UPS Server</strong>, enter <strong>10.255.255.1</strong>, and set the safe-mode delay to the recommended <strong>10 minutes</strong>. The host-local DSM endpoint is <strong>10.255.255.1:3493</strong>.</p>
+  <p>In Control Panel &gt; Hardware &amp; Power &gt; UPS, select <strong>Synology UPS Server</strong>, enter <strong>10.255.255.1</strong>, and set the safe-mode delay to the recommended <strong>5 minutes</strong>. The host-local DSM endpoint is <strong>10.255.255.1:3493</strong>.</p>
 
   <h2 id="verification">Verification</h2>
+  <p>The package description uses ◆ between sections and · between items. Start, recovery checks and stop update its state and observation time in UTC. Reloading the DSM page may be necessary to display the new text.</p>
+  <p>Communication confirmed applies only to the displayed observation time. If it is older than 10 minutes, the state is unconfirmed. Waiting after boot, UPS unavailable, communication problem, check failed and package stopped do not indicate working protection. A description update failure does not stop the UPS service, so always check the age of the text.</p>
+  <p>In the status block: 🟢 UPS communication confirmed; 🔴 communication problem or UPS unavailable; 🟡 waiting, check pending or check failed; ⚪ package stopped. The color refers to the displayed check time: if older than 10 minutes, the state is unconfirmed regardless of the circle.</p>
+  <p>DSM setup and firewall are checked independently: 🟢 settings checked; 🔴 settings differ from the selected configuration; 🟡 could not verify. DSM checks saved enable, mode, server and delay fields. A delay other than the selected 5 minutes is not inherently unsafe.</p>
+  <p>Firewall green requires an enabled persistent DSM profile with the first enabled global TCP 3493 deny and the recognized effective rule order. A temporary block is not enough. Loopback and established connections retain normal exceptions; no external connection test is performed.</p>
+  <p>Only the DSM format observed on the target NAS is recognized. Missing system jq, unknown formats or timeouts produce yellow without affecting UPS operation. Settings are never changed automatically. Settings or communication checks do not prove battery runtime or a complete DSM power-failure scenario.</p>
+  <p>The 5-minute delay is a DSM setting, not a guarantee of battery runtime at any load. Do not use the value 65535 seconds to estimate runtime.</p>
   <p><strong>Package Center: Running</strong> means that the package controller is active. It does not by itself mean that the UPS is connected. Check the actual connection, charge and power state in the DSM UPS UI. Standard DSM notifications report UPS-server loss and restoration.</p>
-  <p>Before relying on shutdown protection, verify that the DSM-managed firewall blocks TCP 3493 to 10.255.255.1 from non-local interfaces.</p>
+  <p>Control Panel &gt; Security &gt; Firewall: add a DENY rule for TCP 3493, all sources and all interfaces, above allow rules in the active profile. Apply the profile. Do not open this port to the network. This persistent DSM rule is configured manually; the temporary package guard does not replace it.</p>
 
   <h2 id="start-stop">Start and stop</h2>
   <p>Use Package Center to start or stop NUT US3000. Start performs one immediate USB attempt and keeps the controller active for safe retries. Stop ends the controller first, then NUT, and restores the exact USB interface.</p>
 
   <h2 id="usb-recovery">USB recovery</h2>
+  <p>Starting with 0017, the package grants its group access to the single exact UPS 2b89:ffff / DC600. No manual udev rule is required. Stop and uninstall revoke that grant, leaving root:root mode 0600 until the next start or USB reconnect. Other USB devices are not modified.</p>
   <p>If USB is unavailable during boot, the first recovery attempt waits until system uptime reaches 10 minutes; later checks run every 5 minutes. Reconnect only the USB data cable. Keep mains power and the protected load connected.</p>
 
   <h2 id="dsm-update">DSM update</h2>
@@ -30,5 +46,7 @@
 
   <h2 id="limitations">Limitations</h2>
   <p>Only the exact UGREEN US3000 USB identity above is supported. The package does not estimate runtime from the device value 65535, control UPS load power, or replace DSM shutdown and notification policy.</p>
+  <p>If local help is unavailable after stopping the package, use <a href="https://github.com/udachneg/nut-us3000-synology/blob/main/README.md">the GitHub instructions</a>.</p>
+  <footer>Hevtech · NUT 2.8.5</footer>
 </body>
 </html>

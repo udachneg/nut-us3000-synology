@@ -6,7 +6,7 @@
         "desc": "This native package supports one USB UGREEN US3000 (2b89:ffff, serial DC600) and uses no runtime container."
       },
       {
-        "desc": "After installation, configure the DSM UPS UI as <b>Synology UPS Server</b> at <b>10.255.255.1</b> and set the recommended safe-mode delay to <b>10 minutes</b>. The host-local endpoint is <b>10.255.255.1:3493</b>."
+        "desc": "After installation, configure the DSM UPS UI as <b>Synology UPS Server</b> at <b>10.255.255.1</b> and set the recommended safe-mode delay to <b>5 minutes</b>. The host-local endpoint is <b>10.255.255.1:3493</b>."
       },
       {
         "desc": "Package Center Running means the retry controller is active; check the actual UPS state in the DSM UPS UI. Standard DSM notifications report connection changes. Before relying on protection, verify the DSM-managed non-local firewall denial for TCP 3493."

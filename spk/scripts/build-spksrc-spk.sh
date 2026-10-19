@@ -125,6 +125,11 @@ done
 "$CP" "$project_root/spk/package/conf/privilege" "$recipe_source/conf/privilege"
 "$CP" "$project_root/spk/package/native/nut-us3000-controller.c" "$recipe_source/native/nut-us3000-controller.c"
 "$CP" "$project_root/spk/package/native/nut-us3000-hostctl.c" "$recipe_source/native/nut-us3000-hostctl.c"
+for name in ram-hostctl.c ram-bridge.c ram-bridge.h ram-exec.c ram-exec.h \
+    ram-runtime.c ram-runtime.h ram-platform.c ram-files.c; do
+    "$CP" "$project_root/spk/package/native/$name" "$recipe_source/native/$name"
+done
+"$PYTHON" "$project_root/spk/package/native/embed_ram_payload.py" > "$recipe_source/native/ram-payload.h"
 for name in install_uifile install_uifile_rus upgrade_uifile upgrade_uifile_rus \
     uninstall_uifile uninstall_uifile_rus; do
     "$CP" "$project_root/spk/package/wizard/$name" "$recipe_source/wizard/$name"
@@ -133,6 +138,8 @@ done
 "$CP" "$project_root/spk/package/payload/share/nut-us3000/healthcheck.sh" "$recipe_source/payload/share/nut-us3000/healthcheck.sh"
 "$CP" "$project_root/spk/package/payload/share/nut-us3000/retry-step.sh" "$recipe_source/payload/share/nut-us3000/retry-step.sh"
 "$CP" "$project_root/spk/package/payload/app/helptoc.conf" "$recipe_source/payload/app/helptoc.conf"
+"$CP" "$project_root/spk/package/payload/app/config" "$recipe_source/payload/app/config"
+"$CP" "$project_root/spk/package/payload/app/index.html" "$recipe_source/payload/app/index.html"
 "$CP" "$project_root/spk/package/payload/app/help/enu/nut-us3000.html" "$recipe_source/payload/app/help/enu/nut-us3000.html"
 "$CP" "$project_root/spk/package/payload/app/help/rus/nut-us3000.html" "$recipe_source/payload/app/help/rus/nut-us3000.html"
 "$CP" "$project_root/spk/package/payload/app/texts/enu/strings" "$recipe_source/payload/app/texts/enu/strings"
@@ -147,6 +154,8 @@ done
     "$recipe_source/wizard"/* \
     "$recipe_source/templates/ups.conf" "$recipe_source/templates/upsd.conf" \
     "$recipe_source/payload/app/helptoc.conf" \
+    "$recipe_source/payload/app/config" \
+    "$recipe_source/payload/app/index.html" \
     "$recipe_source/payload/app/help/enu/nut-us3000.html" \
     "$recipe_source/payload/app/help/rus/nut-us3000.html" \
     "$recipe_source/payload/app/texts/enu/strings" \
@@ -188,7 +197,7 @@ done
 "$MAKE" -C "$spksrc_root/spk/nut-us3000" ARCH=epyc7002 TCVERSION=7.2 package >&2 || \
     fail 'spksrc package build failed'
 
-spk_name=nut-us3000_epyc7002-7.2_2.8.5-0016.spk
+spk_name=nut-us3000_epyc7002-7.2_2.8.5-0022.spk
 built_spk=$spksrc_root/packages/$spk_name
 [ -f "$built_spk" ] && [ ! -L "$built_spk" ] || fail 'expected spksrc package was not produced'
 final_spk=$output_dir/$spk_name

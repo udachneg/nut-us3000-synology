@@ -1,0 +1,12 @@
+{
+  ".url": {
+    "com.synocommunity.packages.nut-us3000": {
+      "type": "url",
+      "icon": "images/nut-us3000-{0}.png",
+      "title": "app_tree:index_title",
+      "desc": "app_tree:description",
+      "url": "/webman/3rdparty/nut-us3000/index.html",
+      "allUsers": false
+    }
+  }
+}

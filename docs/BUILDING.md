@@ -1,7 +1,7 @@
 # Reproducible build
 
 This document describes the developer build path for NUT US3000
-`2.8.5-0016`. It is not part of the ordinary DSM installation flow.
+`2.8.5-0022`. It is not part of the ordinary DSM installation flow.
 
 ## Pinned inputs
 
@@ -13,6 +13,14 @@ This document describes the developer build path for NUT US3000
 - libusb `1.0.29` SHA-256:
   `5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85`
 - target: `epyc7002`, DSM toolchain `7.2`
+
+Verify the package source tree against `release/PACKAGE-SOURCE-0022.sha256`
+from the checkout root using `shasum -a 256 -c release/PACKAGE-SOURCE-0022.sha256`.
+Every distributed `spk/` file is byte-identical to the build-time snapshot.
+One non-source `__pycache__/*.pyc` cache entry from that private snapshot is
+excluded: it is not distributed, and the builder invokes `generate-icons.py`
+directly. No source file or SPK bytes were changed. The RC is the
+previously audited binary, not a new build produced during publication.
 
 The NUT detached signature and release keyring are tracked under
 `spk/sources/`. Synology Toolkit archives, sysroot, Docker image layers and
@@ -26,9 +34,14 @@ build volumes are fetched locally and are not redistributed.
   outputs;
 - network access only during the explicit fetch/bootstrap phases.
 
-## Tests
+## Publication checks
 
-From a clean checkout:
+Download all RC0022 assets into `artifacts/` first (not the source archive into that directory).
+The following checks validate the public source/asset closure and docs; they do not
+rerun the private VM/NAS lifecycle tests. Historical 0016 tests are documented in
+`tests/historical_0016/README.md`.
+
+From this checkout:
 
 ```console
 python3 -m unittest discover -s tests -p 'test_*.py' -v
@@ -49,7 +62,7 @@ pinned NUT keyring before it publishes either source archive.
 Use a new Docker volume name for every bootstrap:
 
 ```console
-CACHE_NAME=nut-us3000-public-0016-build-base
+CACHE_NAME=nut-us3000-public-0022-build-base
 /bin/sh spk/scripts/prepare-build-env.sh "$PROJECT_ROOT" "$CACHE_NAME"
 ```
 
@@ -64,7 +77,7 @@ deleted automatically.
 Create an empty canonical output directory:
 
 ```console
-OUTPUT_DIR=$(mktemp -d /tmp/nut-us3000-public-0016-output.XXXXXX)
+OUTPUT_DIR=$(mktemp -d /tmp/nut-us3000-public-0022-output.XXXXXX)
 /bin/sh spk/scripts/build-release.sh "$PROJECT_ROOT" "$CACHE_NAME" "$OUTPUT_DIR"
 ```
 
@@ -72,10 +85,10 @@ Both package builds and all inspector runs use `--network none`. The wrapper
 creates two new volumes from the prepared base, compares normalized manifests
 byte-for-byte, audits the canonical SPK and writes:
 
-- `nut-us3000_epyc7002-7.2_2.8.5-0016.spk`;
+- `nut-us3000_epyc7002-7.2_2.8.5-0022.spk`;
 - its `.sha256` file;
-- `normalized-manifest-0016.sha256`;
-- `BUILD-PROVENANCE-0016.txt`.
+- `normalized-manifest-0022.sha256`;
+- `BUILD-PROVENANCE-0022.txt`.
 
 Expected final markers include:
 
@@ -84,7 +97,7 @@ BUILD_A=PASS network=none
 BUILD_B=PASS network=none
 NORMALIZED_REBUILD_MATCH=YES
 SPK_AUDIT_COMPLETE
-RELEASE_BUILD_0016_COMPLETE
+RELEASE_BUILD_0022_COMPLETE
 ```
 
 The build volumes are retained for audit or diagnosis. Remove them only after
@@ -96,3 +109,21 @@ The SPK is distributed only as a GitHub Release asset and is not committed to
 Git history. A public RC must pass the documented ordinary-user installation
 and read-only DSM postflight before the same SPK bytes can be promoted to the
 final release.
+
+## Published asset checks
+
+Download all assets into one directory and run:
+
+```console
+shasum -a 256 -c SHA256SUMS-0022.txt
+```
+
+The normalized manifest itself is supplied as `normalized-manifest.json`, together
+with `normalized-manifest-0022.sha256`. The existing build wrapper emits its hash;
+the publication also retains the audited manifest bytes from the two-build run.
+The source closure is versioned in Git; the complete tagged GitHub source archive
+plus the exact NUT/libusb source archives constitute the distributed source inputs.
+
+The source tree includes the RAM payload generator and all scripts/units it embeds.
+It does not require files from a private diagnostic workspace. Build prerequisites
+such as the pinned spksrc checkout/toolchain remain explicit upstream inputs.

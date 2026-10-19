@@ -4,7 +4,7 @@ set -eu
 SPKSRC_COMMIT=5c3cc7da1d4221d7e081ed2a31ba820b0455d4de
 BUILDER_PLATFORM=linux/amd64
 BUILDER_IMAGE=ghcr.io/synocommunity/spksrc@sha256:deeef1a01210c914c43a7c18a40aee62885eeee041cc70e7bd1907153561cc94
-SPK_NAME=nut-us3000_epyc7002-7.2_2.8.5-0016.spk
+SPK_NAME=nut-us3000_epyc7002-7.2_2.8.5-0022.spk
 
 fail() {
     printf '%s\n' "ERROR: $*" >&2
@@ -67,7 +67,7 @@ cleanup() {
     trap - 0 HUP INT TERM
     rm -rf "$attempt"
     if [ "$status" -ne 0 ] || [ "$success" != yes ]; then
-        for name in "$SPK_NAME" "$SPK_NAME.sha256" normalized-manifest-0016.sha256 BUILD-PROVENANCE-0016.txt; do
+        for name in "$SPK_NAME" "$SPK_NAME.sha256" normalized-manifest-0022.sha256 BUILD-PROVENANCE-0022.txt; do
             rm -f "$output_dir/$name"
         done
         printf '%s\n' "BUILD_VOLUMES_RETAINED $volume_a $volume_b" >&2
@@ -116,19 +116,19 @@ cmp -s "$attempt/manifests/a.json" "$attempt/manifests/canonical.json" || fail '
 spk_hash=$(hash_file "$attempt/canonical/$SPK_NAME") || fail 'cannot hash canonical SPK'
 manifest_hash=$(hash_file "$attempt/manifests/canonical.json") || fail 'cannot hash canonical manifest'
 printf '%s  %s\n' "$spk_hash" "$SPK_NAME" > "$attempt/canonical/$SPK_NAME.sha256"
-printf '%s  %s\n' "$manifest_hash" normalized-manifest.json > "$attempt/canonical/normalized-manifest-0016.sha256"
+printf '%s  %s\n' "$manifest_hash" normalized-manifest.json > "$attempt/canonical/normalized-manifest-0022.sha256"
 python3 "$project_root/spk/scripts/write-provenance.py" \
-    "$attempt/canonical/BUILD-PROVENANCE-0016.txt" \
+    "$attempt/canonical/BUILD-PROVENANCE-0022.txt" \
     "SPKSRC_COMMIT=$SPKSRC_COMMIT" \
     "NUT_SHA256=18bf32e59eb764b13da3c4fa70384926d7fa584cb31d2fe7f137a570633eeec1" \
     "LIBUSB_SHA256=5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85" \
     "BUILDER_IMAGE_ID=$image_id" \
     'BUILD_NETWORK=none' \
-    'PACKAGE_VERSION=2.8.5-0016'
+    'PACKAGE_VERSION=2.8.5-0022'
 
-for name in "$SPK_NAME" "$SPK_NAME.sha256" normalized-manifest-0016.sha256 BUILD-PROVENANCE-0016.txt; do
+for name in "$SPK_NAME" "$SPK_NAME.sha256" normalized-manifest-0022.sha256 BUILD-PROVENANCE-0022.txt; do
     mv "$attempt/canonical/$name" "$output_dir/$name"
 done
 success=yes
 printf '%s\n' 'SPK_AUDIT_COMPLETE'
-printf '%s\n' 'RELEASE_BUILD_0016_COMPLETE'
+printf '%s\n' 'RELEASE_BUILD_0022_COMPLETE'

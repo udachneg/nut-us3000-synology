@@ -1,0 +1,28 @@
+# Candidate only. Installed trust/serialization and native DSM gate pending.
+[Unit]
+Description=NUT US3000 RAM server (candidate)
+DefaultDependencies=no
+IgnoreOnIsolate=yes
+Conflicts=systemd-reboot.service systemd-poweroff.service systemd-halt.service
+Before=systemd-reboot.service systemd-poweroff.service systemd-halt.service
+
+[Service]
+Type=simple
+Slice=nutus3000_ram.slice
+User=nutus3000
+Group=nutus3000
+WorkingDirectory=/run/nut-us3000-ram
+Environment=LD_LIBRARY_PATH=/run/nut-us3000-ram/lib
+Environment=NUT_CONFPATH=/run/nut-us3000-ram/conf
+Environment=NUT_STATEPATH=/run/nut-us3000-ram/state
+Environment=NUT_ALTPIDPATH=/run/nut-us3000-ram/state
+Environment=NUT_QUIET_INIT_UPSNOTIFY=true
+ExecStart=/run/nut-us3000-ram/bin/nutus3000-srv -FF -u nutus3000
+Restart=no
+KillMode=control-group
+KillSignal=SIGTERM
+TimeoutStopSec=10
+UMask=0077
+StandardInput=null
+StandardOutput=null
+StandardError=null

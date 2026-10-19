@@ -100,4 +100,10 @@ for name in ups.conf upsd.conf upsd.users; do
     digest=$(hash_file "$config_dir/$name") || exit 1
     printf '%s  %s\n' "$digest" "$name" >> "$expected"
 done
-cmp -s "$expected" "$manifest"
+cmp -s "$expected" "$manifest" || exit 1
+[ -n "${SYNOPKG_PKGDEST:-}" ] || exit 1
+hostctl=$SYNOPKG_PKGDEST/libexec/nut/nut-us3000-hostctl
+[ -f "$hostctl" ] && [ ! -L "$hostctl" ] && [ -x "$hostctl" ] || exit 1
+# DSM can run the incoming preupgrade against the old installed helper (0020).
+# The existing release verb is retained as an exact ram-stop alias in0021.
+"$hostctl" release

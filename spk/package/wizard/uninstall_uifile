@@ -3,7 +3,7 @@
     "step_title": "Remove NUT US3000",
     "items": [
       {
-        "desc": "Stop the package before removal. Uninstallation does not change Synology UPS Server settings, the recommended 10 minutes delay, standard DSM notifications or the DSM-managed firewall rule for 10.255.255.1:3493. Review those host settings manually."
+        "desc": "Stop the package before removal. Uninstallation does not change Synology UPS Server settings, the recommended 5 minutes delay, standard DSM notifications or the DSM-managed firewall rule for 10.255.255.1:3493. Review those host settings manually."
       },
       {
         "desc": "Keep the UGREEN US3000 USB cable (2b89:ffff) connected until stop completes. Package Center status reflects the controller; verify the actual device in the DSM UPS UI before removal."

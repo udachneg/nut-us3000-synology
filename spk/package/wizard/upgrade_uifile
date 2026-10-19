@@ -6,7 +6,7 @@
         "desc": "This update keeps the native UGREEN US3000 USB identity 2b89:ffff and the host-local DSM endpoint 10.255.255.1:3493. Existing package configuration is preserved and validated before start."
       },
       {
-        "desc": "After upgrade, verify Synology UPS Server at 10.255.255.1 with a recommended 10 minutes delay. Package Center Running means the controller is active; verify the actual state in the DSM UPS UI, standard DSM notifications and the DSM-managed firewall denial."
+        "desc": "After upgrade, verify Synology UPS Server at 10.255.255.1 with a recommended 5 minutes delay. Package Center Running means the controller is active; verify the actual state in the DSM UPS UI, standard DSM notifications and the DSM-managed firewall denial."
       }
     ]
   }

@@ -11,3 +11,4 @@ dist/
 release/*
 !release/*.md
 !release/*.sha256
+!release/SHA256SUMS-0022.txt

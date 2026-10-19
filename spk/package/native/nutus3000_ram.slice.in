@@ -1,0 +1,6 @@
+# Candidate only. No installation/enable step in this prototype.
+# Underscores avoid implicit nested parent slices from hyphen-separated names.
+[Unit]
+Description=NUT US3000 RAM runtime slice (candidate)
+DefaultDependencies=no
+IgnoreOnIsolate=yes
