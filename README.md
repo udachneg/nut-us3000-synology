@@ -1,6 +1,6 @@
 # NUT US3000 for Synology DSM
 
-> Development branch: local candidate 0024 makes unknown DSM versions advisory,
+> Development branch: local candidate 0025 makes unknown DSM versions advisory,
 > not a startup ban. It is not published
 > or approved for a DSM upgrade. See [compatibility evidence and
 > limits](docs/COMPATIBILITY_7_4_1.md). Stable 0022 instructions below remain

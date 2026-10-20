@@ -10,7 +10,9 @@ ROOT = Path(__file__).resolve().parents[1]
 LIB = ROOT / "spk/package/payload/share/nut-us3000/lib.sh"
 SOURCE = ROOT / "spk/package/native/nut-us3000-hostctl.c"
 KNOWN = ('productversion="7.2.2"\nbuildnumber="72806"\n'
-         'smallfixnumber="8"\nunique="synology_epyc7002_sa6400"\n')
+         'smallfixnumber="8"\n')
+LIVE_UNAME = ("Linux NAS 5.10.55+ #72806 SMP Mon Jul 21 23:15:58 CST 2025 "
+              "x86_64 GNU/Linux synology_epyc7002_sa6400\n")
 CALL = r'''
 . "$1"
 nutus3000_init() {
@@ -78,10 +80,17 @@ class DescriptionCompatibilityTest(unittest.TestCase):
         cls.version = cls.version_root / "VERSION"
         cls.info = cls.package / "INFO"
         cls.binary = cls.root / "hostctl"
+        cls.uname_output = cls.root / "uname-output"
+        cls.uname_tool = cls.root / "uname"
+        cls.uname_tool.write_text(
+            '#!/bin/sh\n[ "$#" = 1 ] && [ "$1" = -a ] || exit 64\n'
+            f"exec /bin/cat '{cls.uname_output}'\n")
+        cls.uname_tool.chmod(0o755)
         definitions = {
             "NUT_US3000_INFO_ROOT": cls.info_root,
             "NUT_US3000_VERSION_ROOT": cls.version_root,
             "NUT_US3000_SETTINGS_ROOT": cls.root / "absent-settings",
+            "NUT_US3000_SETTINGS_UNAME": cls.uname_tool,
         }
         command = ["cc", "-std=c11", "-Wall", "-Wextra", "-Werror",
                    "-DNUT_US3000_TESTING=1",
@@ -94,7 +103,8 @@ class DescriptionCompatibilityTest(unittest.TestCase):
         if result.returncode:
             raise RuntimeError(result.stdout + result.stderr)
 
-    def publish(self, metadata, state="healthy"):
+    def publish(self, metadata, state="healthy", uname=LIVE_UNAME):
+        self.uname_output.write_text(uname)
         if self.version.exists() or self.version.is_symlink():
             self.version.unlink()
         if metadata is not None:
@@ -117,8 +127,7 @@ class DescriptionCompatibilityTest(unittest.TestCase):
         self.assertIn("🟢 среда ранее проверялась", known)
         for metadata in (KNOWN.replace("7.2.2", "7.4.1").replace("72806", "90080"),
                          KNOWN.replace("7.2.2", "8.0"),
-                         KNOWN.replace('"8"', '"9"'),
-                         KNOWN.replace("sa6400", "fs6400")):
+                         KNOWN.replace('"8"', '"9"')):
             with self.subTest(metadata=metadata):
                 text = self.publish(metadata)
                 self.assertIn("🟡 эта версия DSM ещё не проверена", text)
@@ -132,7 +141,7 @@ class DescriptionCompatibilityTest(unittest.TestCase):
                          KNOWN.encode() + b"\x00", "x" * 65537):
             with self.subTest(metadata=metadata if metadata is None else str(metadata)[:90]):
                 text = self.publish(metadata)
-                self.assertIn("🟡 версию DSM не удалось определить", text)
+                self.assertIn("🟡 не удалось определить среду DSM", text)
                 self.assertNotIn("$(touch", text)
                 self.assertIn("🟢 связь с ИБП подтверждена", text)
 
@@ -155,6 +164,26 @@ class DescriptionCompatibilityTest(unittest.TestCase):
                 self.assertIn("◆ БРАНДМАУЭР: 🟡 не удалось проверить", text)
                 self.assertIn("Задержка 5 минут", text)
                 self.assertIn("TCP 3493", text)
+
+    def test_live_version_without_unique_uses_uname_identity(self):
+        # Actual NAS capture: VERSION has three relevant keys, model is in uname.
+        for metadata in (KNOWN, KNOWN + 'unique="misleading_other_model"\n'):
+            with self.subTest(metadata=metadata):
+                text = self.publish(metadata)
+                self.assertIn("🟢 среда ранее проверялась", text)
+                self.assertIn("🟢 связь с ИБП подтверждена", text)
+
+    def test_uname_identity_is_required_for_exercised_label_not_for_publishing(self):
+        for uname, expected in (
+            (LIVE_UNAME.replace("sa6400", "fs6400"), "🟡 эта версия DSM ещё не проверена"),
+            ("", "🟡 не удалось определить среду DSM"),
+            (LIVE_UNAME + "synology_epyc7002_sa6400\n", "🟡 не удалось определить среду DSM"),
+        ):
+            with self.subTest(uname=uname):
+                text = self.publish(KNOWN, uname=uname)
+                self.assertIn(expected, text)
+                self.assertNotIn("🟢 среда ранее проверялась", text)
+                self.assertIn("🟢 связь с ИБП подтверждена", text)
 
 
 if __name__ == "__main__":

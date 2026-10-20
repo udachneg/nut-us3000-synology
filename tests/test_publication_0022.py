@@ -9,7 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SPK = 'nut-us3000_epyc7002-7.2_2.8.5-0022.spk'
 SPK_HASH = 'cd3fbec1def596f4048a0280e6734e4d37d66c10c77e84a3763af3988c2ca72f'
-SOURCE_MANIFEST = 'release/PACKAGE-SOURCE-0024.sha256'
+SOURCE_MANIFEST = 'release/PACKAGE-SOURCE-0025.sha256'
 
 
 def digest(path):

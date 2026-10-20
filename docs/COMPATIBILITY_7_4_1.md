@@ -1,4 +1,4 @@
-# Local candidate 0024: advisory DSM compatibility
+# Local candidate 0025: advisory DSM compatibility
 
 This development branch is **not a published release**. Stable release 0022 is
 unchanged. Do not update DSM merely because this candidate accepts its version.
@@ -18,8 +18,13 @@ unchanged. Do not update DSM merely because this candidate accepts its version.
   field. Exact SA6400 `7.2.2/72806 Update8` is labelled "environment previously
   exercised", not guaranteed protection. Other readable environments, including
   statically inspected 7.4.1, are unverified (yellow). Unreadable/ambiguous metadata
-  is "could not determine DSM version" (yellow), never a startup prerequisite.
+  is "could not determine DSM environment" (yellow), never a startup prerequisite.
   VERSION is read as bounded data, never executed or copied into INFO.
+  Installed DSM7.2.2 VERSION has no `unique` field: 0025 reads only productversion,
+  buildnumber and smallfixnumber there, and obtains the model from the single
+  epyc7002 token of fixed `/bin/uname -a` using the existing bounded executor.
+  Missing/failed/ambiguous model detection stays advisory. 0024's faulty
+  assumption that VERSION contains `unique` was caught before installation.
 - Compatibility text never replaces live UPS connection, settings, or lifecycle
   status. It is refreshed on the existing start/stop/retry publications; no new
   background task, endpoint or persistent state is introduced.
@@ -56,11 +61,14 @@ full safe shutdown or power-return test has been performed. Existing 0021/0022
 evidence applies only to unchanged components and its documented environment.
 The old full safe-mode observer limitation is not retroactively closed.
 
-0024 verification is limited to changed behavior: actual shell platform
+0024 verification was limited to changed behavior: actual shell platform
 admission, the compiled native INFO publisher against local metadata fixtures,
 source closure and package audit. These tests do not restart anything or prove
 DSM runtime compatibility. Previously passed VM/USB/power/uninstall tests are
 not repeated merely because metadata or the package version changed.
+0025 adds the captured three-field VERSION/uname regression and checks only
+the affected INFO publisher plus source closure/package audit. The unchanged
+shell admission and prior live lifecycle tests are not repeated.
 
 ## Before and after the DSM change
 

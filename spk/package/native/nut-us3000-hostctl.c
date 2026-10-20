@@ -842,6 +842,7 @@ static int release_host(void)
 #undef NUT_US3000_SETTINGS_JQ
 #undef NUT_US3000_SETTINGS_SAVE
 #undef NUT_US3000_VERSION_ROOT
+#undef NUT_US3000_SETTINGS_UNAME
 #endif
 #ifndef NUT_US3000_SETTINGS_ROOT
 #define NUT_US3000_SETTINGS_ROOT "/usr/syno/etc"
@@ -855,16 +856,19 @@ static int release_host(void)
 #ifndef NUT_US3000_VERSION_ROOT
 #define NUT_US3000_VERSION_ROOT "/etc.defaults"
 #endif
+#ifndef NUT_US3000_SETTINGS_UNAME
+#define NUT_US3000_SETTINGS_UNAME "/bin/uname"
+#endif
 enum dsm_result { DSM_EXERCISED, DSM_UNVERIFIED, DSM_UNKNOWN };
 static const char *const dsm_en[] = {
     "🟢 environment previously exercised; not a guarantee of protection",
     "🟡 DSM environment not yet verified; version does not block startup",
-    "🟡 could not determine DSM version; version does not block startup"
+    "🟡 could not determine DSM environment; version does not block startup"
 };
 static const char *const dsm_ru[] = {
     "🟢 среда ранее проверялась; не гарантия защиты",
     "🟡 эта версия DSM ещё не проверена; версия не блокирует запуск",
-    "🟡 версию DSM не удалось определить; версия не блокирует запуск"
+    "🟡 не удалось определить среду DSM; версия не блокирует запуск"
 };
 enum setting_result { SETTING_RED, SETTING_GREEN, SETTING_UNKNOWN, SETTING_DELAY };
 static const char *const setting_en[] = {
@@ -916,14 +920,19 @@ static int info_read(int fd, char *data, struct stat *st)
 
 /* Presentation only. Bounded, fixed-path read, never source/evaluate VERSION
    or copy its contents to INFO. Failure must not disable UPS monitoring. */
+static int settings_tool(const char *path, char *const args[], char *output, size_t size);
+
 static enum dsm_result dsm_environment(void)
 {
     int dir = -1, fd = -1;
     enum dsm_result result = DSM_UNKNOWN;
     char data[INFO_LIMIT + 2];
-    const char *keys[] = {"productversion=", "buildnumber=", "smallfixnumber=", "unique="};
-    const char *exercised[] = {"7.2.2", "72806", "8", "synology_epyc7002_sa6400"};
-    char *values[4] = {0};
+    const char *keys[] = {"productversion=", "buildnumber=", "smallfixnumber="};
+    const char *exercised[] = {"7.2.2", "72806", "8"};
+    char *values[3] = {0};
+    char identity[4096], *save = NULL, *model = NULL;
+    unsigned model_count = 0;
+    char *const args[] = {(char *)NUT_US3000_SETTINGS_UNAME, (char *)"-a", NULL};
     struct stat st;
     dir = open(NUT_US3000_VERSION_ROOT, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
     if (!info_safe_dir(dir)) goto done;
@@ -933,7 +942,7 @@ static enum dsm_result dsm_environment(void)
         char *end = strchr(line, '\n');
         if (end) *end = 0;
         while (*line == ' ' || *line == '\t') line++;
-        for (size_t i = 0; i < 4; i++) {
+        for (size_t i = 0; i < 3; i++) {
             size_t keylen = strlen(keys[i]);
             if (strncmp(line, keys[i], keylen)) continue;
             char *value = line + keylen;
@@ -941,18 +950,27 @@ static enum dsm_result dsm_environment(void)
             if (values[i] || length < 3 || value[0] != '"' || value[length - 1] != '"') goto done;
             value[length - 1] = 0;
             value++;
-            const char *alphabet = i == 3 ?
-                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" :
-                (i == 0 ? "0123456789." : "0123456789");
+            const char *alphabet = i == 0 ? "0123456789." : "0123456789";
             if (strspn(value, alphabet) != strlen(value)) goto done;
             values[i] = value;
         }
         if (!end) break;
         line = end + 1;
     }
-    for (size_t i = 0; i < 4; i++) if (!values[i]) goto done;
-    result = DSM_EXERCISED;
-    for (size_t i = 0; i < 4; i++)
+    for (size_t i = 0; i < 3; i++) if (!values[i]) goto done;
+    /* Installed DSM VERSION has no unique field. Use the same uname identity
+       as the platform gate, through the existing bounded no-shell executor. */
+    if (settings_tool(NUT_US3000_SETTINGS_UNAME, args, identity, sizeof(identity)) != 0) goto done;
+    for (char *token = strtok_r(identity, " \t\r\n", &save); token;
+         token = strtok_r(NULL, " \t\r\n", &save)) {
+        if (!strncmp(token, "synology_epyc7002_", 18)) {
+            model = token;
+            model_count++;
+        }
+    }
+    if (model_count != 1) goto done;
+    result = strcmp(model, "synology_epyc7002_sa6400") ? DSM_UNVERIFIED : DSM_EXERCISED;
+    for (size_t i = 0; i < 3; i++)
         if (strcmp(values[i], exercised[i])) result = DSM_UNVERIFIED;
 done:
     if (fd >= 0) close(fd);
