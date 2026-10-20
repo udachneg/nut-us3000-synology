@@ -10,6 +10,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SPK = 'nut-us3000_epyc7002-7.2_2.8.5-0022.spk'
 SPK_HASH = 'cd3fbec1def596f4048a0280e6734e4d37d66c10c77e84a3763af3988c2ca72f'
 SOURCE_MANIFEST = 'release/PACKAGE-SOURCE-0025.sha256'
+CURRENT_SPK = 'nut-us3000_epyc7002-7.2_2.8.5-0025.spk'
+CURRENT_HASH = 'e89d90f2c2efb1742077887c4ab5f6aa1caa7827936d0c3a0623745d0ac8e436'
 
 
 def digest(path):
@@ -79,10 +81,14 @@ class Publication0022Test(unittest.TestCase):
         for name, delay, deny in [('README.md', '**5 minutes**', 'deny'),
                                   ('README_RU.md', '**5 минут**', 'запрет')]:
             text = (ROOT / name).read_text()
-            for token in ('v2.8.5-0022)', SPK, SPK_HASH, '10.255.255.1', 'TCP 3493', delay,
+            for token in ('v2.8.5-0025-rc1)', CURRENT_SPK, CURRENT_HASH, '10.255.255.1', 'TCP 3493', delay,
                           'Arc Apps & Permissions', 'RAM', '65535', deny):
                 self.assertIn(token, text)
-        validation = (ROOT / 'docs/VALIDATION.md').read_text()
+        current = (ROOT / 'docs/VALIDATION.md').read_text()
+        for token in ('RC_TESTED_UPGRADE', '0022 → 0025', CURRENT_HASH,
+                      'No new full safe-mode', 'remain unverified'):
+            self.assertIn(token, current)
+        validation = (ROOT / 'docs/VALIDATION_0022.md').read_text()
         for token in ('FINAL_TESTED_HOST', 'did **not** produce a formal PASS',
                       'keep-data', 'preconfigured host', 'not part', 'explicit approval',
                       '614 seconds', 'not separately captured', 'not repeated'):
@@ -90,6 +96,10 @@ class Publication0022Test(unittest.TestCase):
         notes = (ROOT / 'release/RELEASE-NOTES-0022.md').read_text()
         for token in (SPK_HASH, 'v2.8.5-0022/README_RU.md', 'no rebuild',
                       '614 seconds', 'formal PASS'):
+            self.assertIn(token, notes)
+        notes = (ROOT / 'release/RELEASE-NOTES-0025-RC1.md').read_text()
+        for token in (CURRENT_HASH, 'v2.8.5-0025-rc1/README_RU.md',
+                      'no rebuild for publication', 'not yet runtime-validated'):
             self.assertIn(token, notes)
 
     def test_current_document_links_resolve(self):

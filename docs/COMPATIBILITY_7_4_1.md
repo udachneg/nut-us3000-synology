@@ -1,7 +1,8 @@
-# Local candidate 0025: advisory DSM compatibility
+# Release 0025 RC1: advisory DSM compatibility
 
-This development branch is **not a published release**. Stable release 0022 is
-unchanged. Do not update DSM merely because this candidate accepts its version.
+0025 RC1 is a prerelease with controlled-upgrade acceptance on DSM 7.2.2 Update 8.
+Stable release 0022 is unchanged. Do not update DSM merely because 0025 accepts
+its version; see the [validation record](VALIDATION.md).
 
 ## Narrow change
 
@@ -71,6 +72,10 @@ the affected INFO publisher plus source closure/package audit. The unchanged
 shell admission and prior live lifecycle tests are not repeated.
 
 ## Before and after the DSM change
+
+The pre-DSM installation gate below passed for 0025 on the documented host:
+upgrade 0022 → 0025, short read-only postflight and visual Package Center check.
+This does not complete the post-DSM gates or certify another installation.
 
 The coordinator must first install the audited candidate on current DSM 7.2.2,
 with a protected backup of 0022 SPK, package data and DSM UPS/firewall settings.

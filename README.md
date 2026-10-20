@@ -1,10 +1,8 @@
 # NUT US3000 for Synology DSM
 
-> Development branch: local candidate 0025 makes unknown DSM versions advisory,
-> not a startup ban. It is not published
-> or approved for a DSM upgrade. See [compatibility evidence and
-> limits](docs/COMPATIBILITY_7_4_1.md). Stable 0022 instructions below remain
-> historical release documentation; 0022 itself rejects DSM 7.4.1.
+> 0025 warns about unverified DSM versions instead of blocking startup by version.
+> This is not confirmation of DSM 7.4.1 compatibility or approval to upgrade DSM.
+> See [compatibility evidence and limits](docs/COMPATIBILITY_7_4_1.md).
 
 [Русский](README_RU.md)
 
@@ -12,10 +10,12 @@ An unofficial native Synology DSM package that connects one UGREEN US3000 UPS
 directly over USB and exposes it to DSM through a host-local NUT 2.8.5 server.
 No runtime container is used on the NAS.
 
-Current release: **[2.8.5-0022](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022)**.
-Upgrade, keep-data reinstall and delete-data clean installation using the public
-guide passed on the documented host. The final SPK is byte-identical to RC1;
-it was not rebuilt. See [validation scope and limits](docs/VALIDATION.md).
+Current build: **[2.8.5-0025 RC1](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0025-rc1)**.
+Controlled upgrade from 0022, UPS/DSM connection and the package card were
+verified on the documented host. This release uses exactly that installed SPK,
+without rebuilding for publication. Clean install and full safe-mode were not
+repeated for 0025. See [validation scope and limits](docs/VALIDATION.md).
+Previous stable: [2.8.5-0022](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022).
 
 ## Tested compatibility
 
@@ -23,7 +23,7 @@ Only this exact combination is validated:
 
 | Component | Validated value |
 | --- | --- |
-| DSM | Xpenology/Arc, DSM 7.2.2-72806, model `SA6400` |
+| DSM | Xpenology/Arc, DSM 7.2.2-72806 Update 8, model `SA6400` |
 | Architecture | `epyc7002` / x86-64 |
 | UPS | UGREEN US3000, USB `2b89:ffff`, serial `DC600` |
 | NUT | `2.8.5`, `usbhid-ups`, subdriver `Arduino HID 0.22` |
@@ -51,20 +51,20 @@ compatibility claim.
 
 ## Download and verify
 
-Download these two files from **[release 0022](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022)**:
+Download these two files from **[release 0025 RC1](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0025-rc1)**:
 
-- `nut-us3000_epyc7002-7.2_2.8.5-0022.spk`
-- `nut-us3000_epyc7002-7.2_2.8.5-0022.spk.sha256`
+- `nut-us3000_epyc7002-7.2_2.8.5-0025.spk`
+- `nut-us3000_epyc7002-7.2_2.8.5-0025.spk.sha256`
 
 Verify the SPK SHA-256 on your computer before installation. For example, on
 macOS or Linux:
 
 ```console
-shasum -a 256 nut-us3000_epyc7002-7.2_2.8.5-0022.spk
+shasum -a 256 nut-us3000_epyc7002-7.2_2.8.5-0025.spk
 ```
 
 The result must exactly match the published `.sha256` file.
-This build's SHA-256: `cd3fbec1def596f4048a0280e6734e4d37d66c10c77e84a3763af3988c2ca72f`.
+This build's SHA-256: `e89d90f2c2efb1742077887c4ab5f6aa1caa7827936d0c3a0623745d0ac8e436`.
 The SPK is not signed with a Synology certificate. A checksum verifies integrity,
 not trust in the download source. Read the warnings and license and accept only
 if you agree.
@@ -138,6 +138,13 @@ and firewall settings have independent badges: 🟢 checked, 🔴 problem/mismat
 🟡 unknown/waiting; ⚪ package stopped. Check the UTC observation time: text older
 than 10 minutes is stale regardless of color. Refresh DSM if necessary. A green
 firewall badge checks configuration and rule ordering, not external connectivity.
+
+The separate compatibility badge describes the environment, not live UPS health.
+An unverified DSM version or unreadable version/model metadata gives a yellow
+warning, not a version-based startup ban. The green "environment previously
+exercised" label is not a guarantee of protection. Binary platform, permissions
+and runtime safety checks still apply; the installation minimum remains DSM
+7.2.2-72806 and the queue reader still requires its implemented systemd 219 contract.
 
 To check your installation, wait at least 10 minutes after setup and revisit Device
 Information and the package card. This observes installation; it is not a power

@@ -1,72 +1,52 @@
-# Validation status — 2.8.5-0022
+# Validation status — 2.8.5-0025 RC1
 
-Status: `FINAL_TESTED_HOST` — final release approved on 2026-10-20 after the
-public clean-install gate passed. This is not certification for other hosts.
-The SPK and package sources are unchanged from RC1; no rebuild was performed.
+Status: `RC_TESTED_UPGRADE`, 2026-10-20. Controlled **0022 → 0025** upgrade,
+UPS/DSM connection and the package card passed on the tested host. The published
+SPK is the same binary installed during that gate, with no publication rebuild.
 
-Artifact: `nut-us3000_epyc7002-7.2_2.8.5-0022.spk`
-SHA-256: `cd3fbec1def596f4048a0280e6734e4d37d66c10c77e84a3763af3988c2ca72f`
+Artifact: `nut-us3000_epyc7002-7.2_2.8.5-0025.spk`
+SHA-256: `e89d90f2c2efb1742077887c4ab5f6aa1caa7827936d0c3a0623745d0ac8e436`
 
-## Tested matrix
+## Tested environment
 
-Xpenology/Arc DSM 7.2.2-72806, SA6400, epyc7002/x86-64;
+Xpenology/Arc DSM 7.2.2-72806 **Update 8**, SA6400, epyc7002/x86-64;
 UGREEN US3000 USB 2b89:ffff, serial DC600; NUT 2.8.5 / Arduino HID 0.22;
-libusb 1.0.29. Arc Apps & Permissions was not required for the normal path.
-Other DSM builds, official Synology hardware and other UPS devices are unverified.
+libusb 1.0.29. Other DSM versions, official Synology hardware and other UPS
+devices are not covered by this acceptance.
 
-## Evidence available before publication
+## Current evidence
 
 | Check | Result and scope |
 | --- | --- |
-| 0022 offline builds, 2026-10-19 | Two builds with network disabled; normalized manifests identical; source inputs unchanged; canonical SPK audited. No rebuild for publication. |
-| 0022 delay diagnostics | Actual INFO writer checked for 300 seconds, other/missing delay, unchanged boot/freshness timers. Three checks passed. |
-| 0021 → 0022 upgrade, 2026-10-19 | Passed; version/running state, preserved NUT configuration, local endpoints, DSM connection and 300-second delay verified. No NAS reboot or power interruption. |
-| 0022 keep-data uninstall/reinstall, 2026-10-19 | Passed through Package Center. Removal stopped RAM services and removed listeners/alias; exact USB interface restored. Reinstall preserved configuration bytes/modes, restored service and DSM connection with 300 seconds. NAS boot and unrelated container start times unchanged. |
-| 0022 public-guide delete-data clean install, 2026-10-19–20 (Europe/Moscow) | Passed. Package data were empty before manual reinstall; fresh configuration and its manifest validated. Read-only postflight passed 614 seconds after DSM setup. RAM process identities, both NUT endpoints, DSM connection, 300-second delay, USB and firewall checks passed. NAS boot and unrelated container start times unchanged. |
-| Inherited RAM lifecycle evidence | Isolated Linux/systemd VM tests, DSM-like stop ordering and queue inspection, plus 0021 ordinary stop/start and live recovery observations. Runtime server/driver/controller/hooks are unchanged between 0021 and 0022. These were not rerun for text/version changes. |
+| Advisory DSM policy | Actual shell gate tests passed for known/unknown/unreadable metadata and incompatible platform rejection in 0024. The shell is byte-identical in 0025, so those tests were not repeated. |
+| Native package-card publisher | Five affected tests passed for captured VERSION without `unique`, bounded uname model detection, alternate/missing/ambiguous identity, unsafe metadata and independent state/settings text. |
+| Source closure and documentation | Three targeted checks passed; package sources match `PACKAGE-SOURCE-0025.sha256`. |
+| Offline build and artifact audit | Two builds, both SPK audits and normalized comparison passed. Inputs remained unchanged. Relative to 0024, only package version and the presentation helper binary changed. |
+| Independent code review | The 0024 advisory change and 0025 model-source correction received ACCEPT with no findings. This is code evidence, not a live DSM 7.4.1 acceptance. |
+| Controlled 0022 → 0025 upgrade | All package hooks and installation returned 0; package running. Protected rollback/configuration backup was verified first. |
+| Read-only postflight | Both local endpoints reported online state, controller HEALTHY, RAM services active, DSM upsmon connected, helper permissions/audit passed. Package configuration, DSM UPS/firewall settings, NAS boot ID and unrelated container start times were unchanged. |
+| Package Center card | Installed version 2.8.5-0025 and Running visible; connection, previously exercised environment, five-minute DSM setup and firewall badges green, with a fresh observation timestamp. |
 
-Private logs and infrastructure identifiers are deliberately not distributed.
-This is a summary of recorded evidence, not a claim of testing every host.
+The pre-install check caught 0024's assumption that installed DSM VERSION
+contains `unique`. It does not on the tested NAS; 0024 was not installed.
+0025 obtains the model from fixed `/bin/uname -a` and retains advisory handling.
 
-## Full safe-mode observation and limitation
+## Inherited evidence and limits
 
-On 0021, with a temporary **one-minute DSM delay** for that test (not the new
-five-minute setting), the recorded sequence was battery power at 18:03:31, data volumes absent
-by 18:06:25, restored mains at 18:07:09, and SSH available after an automatic reboot
-at 18:12:54 (one local clock, 2026-10-19). RAM runtime was observed alive while
-data volumes were absent. DSM recovery was observed on this host. SSH was verified
-5m45s after mains restoration, outside the planned five-minute observation window;
-this is an upper bound on availability, not its exact first instant.
+The [0022 validation record](VALIDATION_0022.md) preserves the earlier keep-data
+reinstall, public-guide clean install and inherited RAM lifecycle evidence.
+Driver/server/controller/hooks and the operational RAM/USB/firewall logic were
+not changed for 0025. Those successful gates were not repeated for this release.
 
-The old temporary observer gate did **not** produce a formal PASS: it used an
-ExecMain timestamp that remained zero. The observer was corrected and checked
-locally, but no second full power test was run with it. The observer is not part
-of the SPK. Do not interpret this final release as a new formal safe-mode acceptance for 0022,
-nor as a guarantee of reboot/recovery on arbitrary DSM installations.
+No new full safe-mode or power-return test was run for 0025. The earlier 0021
+observer did **not** produce a formal PASS, although automatic recovery was
+observed; that limitation remains in the historical record. Successful UPS
+communication is not proof of the complete shutdown/recovery sequence.
 
-## Completed public clean-install gate
+DSM 7.4.1 has only offline firmware/ABI investigation so far. Actual installation,
+boot, USB ownership, cgroups and safe-mode recovery on it remain unverified.
+See [DSM compatibility policy and evidence](COMPATIBILITY_7_4_1.md).
 
-The operator installed RC1 manually through Package Center following README_RU.md,
-after a controlled delete-data uninstall and verified backup. Mains, UPS load and
-NAS remained running. No power test or NAS reboot was performed.
-
-It is a fresh package install on a preconfigured host: persistent DSM Firewall
-deny and DSM UPS form values are host settings, not package data. They were
-checked explicitly; their presence does not demonstrate automatic provisioning.
-Empty package directories and five tiny RAM coordination files remained by the
-lifecycle contract, but no old package configuration, state or home data were reused.
-
-At 00:04:54 on 2026-10-20 (Europe/Moscow), the read-only postflight passed after
-614 seconds since DSM setup: version/status, fresh package data, exact USB
-identity/permissions, unchanged RAM process identities, both local NUT endpoints,
-exact listeners/alias, native helper audit, DSM connection, 5-minute delay and
-persistent firewall deny. DSM showed UGREEN US3000 connected with 100% charge.
-The source SPK checksum was verified before RC publication, and six installed
-runtime files matched that SPK in postflight; the operator-selected downloaded
-archive was not separately captured. Observation used timestamped samples, not
-continuous packet capture or proof against every transient interruption.
-
-The owner gave explicit approval for final publication on 2026-10-20.
-Previously passed build, runtime, VM and power tests were not repeated for this
-documentation-only promotion. The final SPK retains the exact RC hash above;
-any changed runtime requires its own relevant checks, not a silent asset replacement.
+0025 RC1 is a prerelease. It has controlled-upgrade acceptance, not a new
+ordinary-user clean-install acceptance from the public RC. Private logs,
+credentials, host backups and infrastructure paths are not distributed.

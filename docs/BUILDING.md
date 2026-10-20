@@ -1,7 +1,7 @@
 # Reproducible build
 
 This document describes the developer build path for NUT US3000
-`2.8.5-0022`. It is not part of the ordinary DSM installation flow.
+`2.8.5-0025`. It is not part of the ordinary DSM installation flow.
 
 ## Pinned inputs
 
@@ -14,13 +14,12 @@ This document describes the developer build path for NUT US3000
   `5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85`
 - target: `epyc7002`, DSM toolchain `7.2`
 
-Verify the package source tree against `release/PACKAGE-SOURCE-0022.sha256`
-from the checkout root using `shasum -a 256 -c release/PACKAGE-SOURCE-0022.sha256`.
+Verify the package source tree against `release/PACKAGE-SOURCE-0025.sha256`
+from the checkout root using `shasum -a 256 -c release/PACKAGE-SOURCE-0025.sha256`.
 Every distributed `spk/` file is byte-identical to the build-time snapshot.
-One non-source `__pycache__/*.pyc` cache entry from that private snapshot is
-excluded: it is not distributed, and the builder invokes `generate-icons.py`
-directly. No source file or SPK bytes were changed. The final release uses the
-previously audited RC1 binary, not a new build produced during publication.
+Publication reuses the audited and installed 0025 binary; no package source or
+SPK bytes are changed for the RC release. A new build is not required merely
+to publish that artifact.
 
 The NUT detached signature and release keyring are tracked under
 `spk/sources/`. Synology Toolkit archives, sysroot, Docker image layers and
@@ -36,15 +35,23 @@ build volumes are fetched locally and are not redistributed.
 
 ## Publication checks
 
-Download all release 0022 assets into `artifacts/` first (not the source archive into that directory).
-The following checks validate the public source/asset closure and docs; they do not
-rerun the private VM/NAS lifecycle tests. Historical 0016 tests are documented in
-`tests/historical_0016/README.md`.
+The following targeted checks validate current public source closure and docs;
+they require no downloaded SPK and do not rerun VM/NAS lifecycle tests.
+The remaining asset tests in `test_publication_0022.py` intentionally validate
+historical 0022 assets in `artifacts/`; do not put 0025 assets there to run those
+historical checks. Historical 0016 tests are documented separately in
+`tests/historical_0016/README.md`. Verify 0025 downloads using its checksum file
+as described below.
 
 From this checkout:
 
 ```console
-python3 -m unittest discover -s tests -p 'test_*.py' -v
+python3 -m unittest \
+  tests.test_publication_0022.Publication0022Test.test_complete_spk_source_matches_build_snapshot \
+  tests.test_publication_0022.Publication0022Test.test_source_manifest_is_exactly_the_git_distributed_source_set \
+  tests.test_publication_0022.Publication0022Test.test_instructions_and_completed_gate \
+  tests.test_publication_0022.Publication0022Test.test_current_document_links_resolve \
+  tests.test_publication_0022.Publication0022Test.test_public_index_has_no_private_paths_or_artifacts -v
 ```
 
 ## Fetch and verify redistributable sources
@@ -62,7 +69,7 @@ pinned NUT keyring before it publishes either source archive.
 Use a new Docker volume name for every bootstrap:
 
 ```console
-CACHE_NAME=nut-us3000-public-0022-build-base
+CACHE_NAME=nut-us3000-public-0025-build-base
 /bin/sh spk/scripts/prepare-build-env.sh "$PROJECT_ROOT" "$CACHE_NAME"
 ```
 
@@ -77,7 +84,7 @@ deleted automatically.
 Create an empty canonical output directory:
 
 ```console
-OUTPUT_DIR=$(mktemp -d /tmp/nut-us3000-public-0022-output.XXXXXX)
+OUTPUT_DIR=$(mktemp -d /tmp/nut-us3000-public-0025-output.XXXXXX)
 /bin/sh spk/scripts/build-release.sh "$PROJECT_ROOT" "$CACHE_NAME" "$OUTPUT_DIR"
 ```
 
@@ -85,10 +92,10 @@ Both package builds and all inspector runs use `--network none`. The wrapper
 creates two new volumes from the prepared base, compares normalized manifests
 byte-for-byte, audits the canonical SPK and writes:
 
-- `nut-us3000_epyc7002-7.2_2.8.5-0022.spk`;
+- `nut-us3000_epyc7002-7.2_2.8.5-0025.spk`;
 - its `.sha256` file;
-- `normalized-manifest-0022.sha256`;
-- `BUILD-PROVENANCE-0022.txt`.
+- `normalized-manifest-0025.sha256`;
+- `BUILD-PROVENANCE-0025.txt`.
 
 Expected final markers include:
 
@@ -97,7 +104,7 @@ BUILD_A=PASS network=none
 BUILD_B=PASS network=none
 NORMALIZED_REBUILD_MATCH=YES
 SPK_AUDIT_COMPLETE
-RELEASE_BUILD_0022_COMPLETE
+RELEASE_BUILD_0025_COMPLETE
 ```
 
 The build volumes are retained for audit or diagnosis. Remove them only after
@@ -115,11 +122,11 @@ final release.
 Download all assets into one directory and run:
 
 ```console
-shasum -a 256 -c SHA256SUMS-0022.txt
+shasum -a 256 -c SHA256SUMS-0025.txt
 ```
 
 The normalized manifest itself is supplied as `normalized-manifest.json`, together
-with `normalized-manifest-0022.sha256`. The existing build wrapper emits its hash;
+with `normalized-manifest-0025.sha256`. The existing build wrapper emits its hash;
 the publication also retains the audited manifest bytes from the two-build run.
 The source closure is versioned in Git; the complete tagged GitHub source archive
 plus the exact NUT/libusb source archives constitute the distributed source inputs.
