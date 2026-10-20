@@ -1,5 +1,10 @@
 # NUT US3000 for Synology DSM
 
+> Development branch: local candidate 0023 for SA6400/DSM 7.4.1 is not published
+> or approved for a DSM upgrade. See [compatibility evidence and
+> limits](docs/COMPATIBILITY_7_4_1.md). Stable 0022 instructions below remain
+> historical release documentation; 0022 itself rejects DSM 7.4.1.
+
 [Русский](README_RU.md)
 
 An unofficial native Synology DSM package that connects one UGREEN US3000 UPS

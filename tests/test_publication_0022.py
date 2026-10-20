@@ -1,4 +1,4 @@
-"""Distribution-only checks: no Docker, NAS, USB or service changes."""
+"""Historical 0022 assets and current source closure; no Docker/NAS changes."""
 import hashlib
 from pathlib import Path
 import re
@@ -9,6 +9,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 SPK = 'nut-us3000_epyc7002-7.2_2.8.5-0022.spk'
 SPK_HASH = 'cd3fbec1def596f4048a0280e6734e4d37d66c10c77e84a3763af3988c2ca72f'
+SOURCE_MANIFEST = 'release/PACKAGE-SOURCE-0023.sha256'
 
 
 def digest(path):
@@ -36,7 +37,7 @@ def distributed_paths():
 
 class Publication0022Test(unittest.TestCase):
     def test_complete_spk_source_matches_build_snapshot(self):
-        expected = manifest(ROOT / 'release/PACKAGE-SOURCE-0022.sha256')
+        expected = manifest(ROOT / SOURCE_MANIFEST)
         actual = {str(p.relative_to(ROOT)): digest(p)
                   for p in (ROOT / 'spk').rglob('*')
                   if p.is_file() and '__pycache__' not in p.parts}
@@ -44,7 +45,7 @@ class Publication0022Test(unittest.TestCase):
         self.assertFalse(any(p.is_symlink() for p in (ROOT / 'spk').rglob('*')))
 
     def test_source_manifest_is_exactly_the_git_distributed_source_set(self):
-        expected = manifest(ROOT / 'release/PACKAGE-SOURCE-0022.sha256')
+        expected = manifest(ROOT / SOURCE_MANIFEST)
         self.assertEqual(set(expected), {p for p in distributed_paths() if p.startswith('spk/')})
 
     def test_release_assets_match_all_published_checksums(self):
