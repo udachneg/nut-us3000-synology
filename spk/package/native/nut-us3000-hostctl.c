@@ -841,6 +841,7 @@ static int release_host(void)
 #undef NUT_US3000_SETTINGS_ROOT
 #undef NUT_US3000_SETTINGS_JQ
 #undef NUT_US3000_SETTINGS_SAVE
+#undef NUT_US3000_VERSION_ROOT
 #endif
 #ifndef NUT_US3000_SETTINGS_ROOT
 #define NUT_US3000_SETTINGS_ROOT "/usr/syno/etc"
@@ -851,6 +852,20 @@ static int release_host(void)
 #ifndef NUT_US3000_SETTINGS_SAVE
 #define NUT_US3000_SETTINGS_SAVE "/sbin/iptables-save"
 #endif
+#ifndef NUT_US3000_VERSION_ROOT
+#define NUT_US3000_VERSION_ROOT "/etc.defaults"
+#endif
+enum dsm_result { DSM_EXERCISED, DSM_UNVERIFIED, DSM_UNKNOWN };
+static const char *const dsm_en[] = {
+    "🟢 environment previously exercised; not a guarantee of protection",
+    "🟡 DSM environment not yet verified; version does not block startup",
+    "🟡 could not determine DSM version; version does not block startup"
+};
+static const char *const dsm_ru[] = {
+    "🟢 среда ранее проверялась; не гарантия защиты",
+    "🟡 эта версия DSM ещё не проверена; версия не блокирует запуск",
+    "🟡 версию DSM не удалось определить; версия не блокирует запуск"
+};
 enum setting_result { SETTING_RED, SETTING_GREEN, SETTING_UNKNOWN, SETTING_DELAY };
 static const char *const setting_en[] = {
     "🔴 settings do not match", "🟢 settings checked", "🟡 could not verify",
@@ -897,6 +912,52 @@ static int info_read(int fd, char *data, struct stat *st)
     if (used != (size_t)st->st_size || used > INFO_LIMIT || memchr(data, 0, used)) return -1;
     data[used] = 0;
     return 0;
+}
+
+/* Presentation only. Bounded, fixed-path read, never source/evaluate VERSION
+   or copy its contents to INFO. Failure must not disable UPS monitoring. */
+static enum dsm_result dsm_environment(void)
+{
+    int dir = -1, fd = -1;
+    enum dsm_result result = DSM_UNKNOWN;
+    char data[INFO_LIMIT + 2];
+    const char *keys[] = {"productversion=", "buildnumber=", "smallfixnumber=", "unique="};
+    const char *exercised[] = {"7.2.2", "72806", "8", "synology_epyc7002_sa6400"};
+    char *values[4] = {0};
+    struct stat st;
+    dir = open(NUT_US3000_VERSION_ROOT, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
+    if (!info_safe_dir(dir)) goto done;
+    fd = openat(dir, "VERSION", O_RDONLY | O_NONBLOCK | O_NOFOLLOW);
+    if (info_read(fd, data, &st) != 0) goto done;
+    for (char *line = data; *line;) {
+        char *end = strchr(line, '\n');
+        if (end) *end = 0;
+        while (*line == ' ' || *line == '\t') line++;
+        for (size_t i = 0; i < 4; i++) {
+            size_t keylen = strlen(keys[i]);
+            if (strncmp(line, keys[i], keylen)) continue;
+            char *value = line + keylen;
+            size_t length = strlen(value);
+            if (values[i] || length < 3 || value[0] != '"' || value[length - 1] != '"') goto done;
+            value[length - 1] = 0;
+            value++;
+            const char *alphabet = i == 3 ?
+                "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" :
+                (i == 0 ? "0123456789." : "0123456789");
+            if (strspn(value, alphabet) != strlen(value)) goto done;
+            values[i] = value;
+        }
+        if (!end) break;
+        line = end + 1;
+    }
+    for (size_t i = 0; i < 4; i++) if (!values[i]) goto done;
+    result = DSM_EXERCISED;
+    for (size_t i = 0; i < 4; i++)
+        if (strcmp(values[i], exercised[i])) result = DSM_UNVERIFIED;
+done:
+    if (fd >= 0) close(fd);
+    if (dir >= 0) close(dir);
+    return result;
 }
 
 static int settings_unchanged(int dir, const char *name, int fd,
@@ -1181,6 +1242,7 @@ static int publish_description(size_t state)
     struct tm utc;
     sigset_t signals, previous_signals;
     enum setting_result ups = SETTING_UNKNOWN, firewall = SETTING_UNKNOWN;
+    enum dsm_result dsm = dsm_environment();
 
     root = open(NUT_US3000_INFO_ROOT, O_RDONLY | O_DIRECTORY | O_NOFOLLOW);
     if (!info_safe_dir(root)) goto done;
@@ -1238,12 +1300,12 @@ static int publish_description(size_t state)
     if (!stream) goto done;
     for (size_t pos = 0; pos < (size_t)before.st_size;) {
         if (pos == begin[0]) {
-            if (fprintf(stream, "description=\"◆ STATUS: %s · Checked: %s ◆ NOTE: if older than 10 minutes, state is unconfirmed. Running means controller active, not confirmed protection. ◆ DSM SETUP: %s · Synology UPS server · IP 10.255.255.1 · Delay 5 minutes ◆ FIREWALL: %s · deny external TCP 3493 before allow rules · persistent profile and applied order; no external connection test ◆ HELP: NUT US3000 in DSM main menu\"",
-                        description_states[state].english, timestamp, setting_en[ups], setting_en[firewall]) < 0) goto done;
+            if (fprintf(stream, "description=\"◆ STATUS: %s · Checked: %s ◆ NOTE: if older than 10 minutes, state is unconfirmed. Running means controller active, not confirmed protection. ◆ COMPATIBILITY: %s ◆ DSM SETUP: %s · Synology UPS server · IP 10.255.255.1 · Delay 5 minutes ◆ FIREWALL: %s · deny external TCP 3493 before allow rules · persistent profile and applied order; no external connection test ◆ HELP: NUT US3000 in DSM main menu\"",
+                        description_states[state].english, timestamp, dsm_en[dsm], setting_en[ups], setting_en[firewall]) < 0) goto done;
             pos = end[0];
         } else if (pos == begin[1]) {
-            if (fprintf(stream, "description_rus=\"◆ СОСТОЯНИЕ: %s · Проверено: %s ◆ ВАЖНО: если проверка старше 10 минут, состояние не подтверждено. Выполняется — контроллер активен, не гарантия защиты. ◆ НАСТРОЙКА DSM: %s · Сервер ИБП Synology · IP 10.255.255.1 · Задержка 5 минут ◆ БРАНДМАУЭР: %s · запретить внешний TCP 3493 выше разрешающих правил · постоянный профиль и применённый порядок; без внешнего теста подключения ◆ СПРАВКА: NUT US3000 в главном меню DSM\"",
-                        description_states[state].russian, timestamp, setting_ru[ups], setting_ru[firewall]) < 0) goto done;
+            if (fprintf(stream, "description_rus=\"◆ СОСТОЯНИЕ: %s · Проверено: %s ◆ ВАЖНО: если проверка старше 10 минут, состояние не подтверждено. Выполняется — контроллер активен, не гарантия защиты. ◆ СОВМЕСТИМОСТЬ: %s ◆ НАСТРОЙКА DSM: %s · Сервер ИБП Synology · IP 10.255.255.1 · Задержка 5 минут ◆ БРАНДМАУЭР: %s · запретить внешний TCP 3493 выше разрешающих правил · постоянный профиль и применённый порядок; без внешнего теста подключения ◆ СПРАВКА: NUT US3000 в главном меню DSM\"",
+                        description_states[state].russian, timestamp, dsm_ru[dsm], setting_ru[ups], setting_ru[firewall]) < 0) goto done;
             pos = end[1];
         } else {
             if (fputc((unsigned char)original[pos++], stream) == EOF) goto done;

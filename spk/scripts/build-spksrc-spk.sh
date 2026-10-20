@@ -197,7 +197,7 @@ done
 "$MAKE" -C "$spksrc_root/spk/nut-us3000" ARCH=epyc7002 TCVERSION=7.2 package >&2 || \
     fail 'spksrc package build failed'
 
-spk_name=nut-us3000_epyc7002-7.2_2.8.5-0023.spk
+spk_name=nut-us3000_epyc7002-7.2_2.8.5-0024.spk
 built_spk=$spksrc_root/packages/$spk_name
 [ -f "$built_spk" ] && [ ! -L "$built_spk" ] || fail 'expected spksrc package was not produced'
 final_spk=$output_dir/$spk_name

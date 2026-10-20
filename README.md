@@ -1,6 +1,7 @@
 # NUT US3000 for Synology DSM
 
-> Development branch: local candidate 0023 for SA6400/DSM 7.4.1 is not published
+> Development branch: local candidate 0024 makes unknown DSM versions advisory,
+> not a startup ban. It is not published
 > or approved for a DSM upgrade. See [compatibility evidence and
 > limits](docs/COMPATIBILITY_7_4_1.md). Stable 0022 instructions below remain
 > historical release documentation; 0022 itself rejects DSM 7.4.1.

@@ -138,85 +138,9 @@ nutus3000_stat_is() {
 
 nutus3000_validate_platform() {
     nutus3000_init || return 1
-    nutus3000_path_is_physical "$nutus3000_version" || return 1
-    [ -f "$nutus3000_version" ] && [ ! -L "$nutus3000_version" ] || return 1
-
-    nutus3000_vp_product_count=0
-    nutus3000_vp_build_count=0
-    nutus3000_vp_nano_count=0
-    nutus3000_vp_unique_count=0
-    nutus3000_vp_product=
-    nutus3000_vp_build=
-    nutus3000_vp_nano=
-    nutus3000_vp_unique=
-    while IFS= read -r nutus3000_vp_line; do
-        case $nutus3000_vp_line in
-            productversion=*)
-                nutus3000_vp_product_count=$((nutus3000_vp_product_count + 1))
-                nutus3000_vp_product=$nutus3000_vp_line
-                ;;
-            buildnumber=*)
-                nutus3000_vp_build_count=$((nutus3000_vp_build_count + 1))
-                nutus3000_vp_build=$nutus3000_vp_line
-                ;;
-            smallfixnumber=*)
-                nutus3000_vp_nano_count=$((nutus3000_vp_nano_count + 1))
-                nutus3000_vp_nano=$nutus3000_vp_line
-                ;;
-            unique=*)
-                nutus3000_vp_unique_count=$((nutus3000_vp_unique_count + 1))
-                nutus3000_vp_unique=$nutus3000_vp_line
-                ;;
-        esac
-    done < "$nutus3000_version" || return 1
-    [ "$nutus3000_vp_product_count" -eq 1 ] || return 1
-    [ "$nutus3000_vp_build_count" -eq 1 ] || return 1
-    case $nutus3000_vp_product in
-        'productversion="'*'"')
-            nutus3000_vp_product=${nutus3000_vp_product#productversion=\"}
-            nutus3000_vp_product=${nutus3000_vp_product%\"}
-            ;;
-        *) return 1 ;;
-    esac
-    case $nutus3000_vp_product in
-        7.2.*)
-            # Preserve the existing 7.2 policy, including later patch releases.
-            nutus3000_vp_patch=${nutus3000_vp_product#7.2.}
-            nutus3000_is_decimal "$nutus3000_vp_patch" || return 1
-            case $nutus3000_vp_patch in 0|1|0*) return 1 ;; esac
-            ;;
-        7.4.1)
-            # Narrow opt-in: inspected SA6400 base90080 and Update 1 only.
-            [ "$nutus3000_vp_build" = 'buildnumber="90080"' ] || return 1
-            [ "$nutus3000_vp_nano_count" -eq 1 ] || return 1
-            [ "$nutus3000_vp_unique_count" -eq 1 ] || return 1
-            [ "$nutus3000_vp_unique" = 'unique="synology_epyc7002_sa6400"' ] || return 1
-            case $nutus3000_vp_nano in
-                'smallfixnumber="0"'|'smallfixnumber="1"') ;;
-                *) return 1 ;;
-            esac
-            ;;
-        *) return 1 ;;
-    esac
-
-    case $nutus3000_vp_build in
-        'buildnumber="'*'"')
-            nutus3000_vp_build=${nutus3000_vp_build#buildnumber=\"}
-            nutus3000_vp_build=${nutus3000_vp_build%\"}
-            ;;
-        *) return 1 ;;
-    esac
-    nutus3000_is_decimal "$nutus3000_vp_build" || return 1
-    case $nutus3000_vp_build in 0*) return 1 ;; esac
-    nutus3000_vp_build_length=${#nutus3000_vp_build}
-    [ "$nutus3000_vp_build_length" -le 10 ] || return 1
-    if [ "$nutus3000_vp_build_length" -lt 5 ]; then
-        return 1
-    fi
-    if [ "$nutus3000_vp_build_length" -eq 5 ]; then
-        [ "$nutus3000_vp_build" -ge 72806 ] || return 1
-    fi
-
+    # DSM version/build/update are advisory metadata, not a runtime allowlist.
+    # Keep the actual binary platform boundary; the INFO publisher independently
+    # reports unverified/unreadable DSM metadata without controlling lifecycle.
     nutus3000_vp_machine=$($nutus3000_uname -m) || return 1
     [ "$nutus3000_vp_machine" = x86_64 ] || return 1
     nutus3000_vp_uname=$($nutus3000_uname -a) || return 1
@@ -224,9 +148,6 @@ nutus3000_validate_platform() {
     for nutus3000_vp_token in $nutus3000_vp_uname; do
         case $nutus3000_vp_token in
             synology_epyc7002_*)
-                if [ "$nutus3000_vp_product" = 7.4.1 ]; then
-                    [ "$nutus3000_vp_token" = synology_epyc7002_sa6400 ] || return 1
-                fi
                 nutus3000_vp_platform_count=$((nutus3000_vp_platform_count + 1))
                 ;;
         esac
