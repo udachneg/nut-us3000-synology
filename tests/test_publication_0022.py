@@ -86,7 +86,10 @@ class Publication0022Test(unittest.TestCase):
                 self.assertIn(token, text)
         current = (ROOT / 'docs/VALIDATION.md').read_text()
         for token in ('RC_TESTED_UPGRADE', '0022 → 0025', CURRENT_HASH,
-                      'No new full safe-mode', 'remain unverified'):
+                      'No new full safe-mode', 'remain unverified',
+                      'RC_RUNTIME_CHECKED_DSM741_STARTUP_OPEN',
+                      '7.4.1-90080 Update 1', '16:52:02', 'error **272**',
+                      'version_limit', 'manual', 'remains unverified'):
             self.assertIn(token, current)
         validation = (ROOT / 'docs/VALIDATION_0022.md').read_text()
         for token in ('FINAL_TESTED_HOST', 'did **not** produce a formal PASS',
@@ -99,12 +102,16 @@ class Publication0022Test(unittest.TestCase):
             self.assertIn(token, notes)
         notes = (ROOT / 'release/RELEASE-NOTES-0025-RC1.md').read_text()
         for token in (CURRENT_HASH, 'v2.8.5-0025-rc1/README_RU.md',
-                      'no rebuild for publication', 'not yet runtime-validated'):
+                      'no rebuild for publication', 'after',
+                      'manual start', 'script error 272', 'remain unverified',
+                      'blob/main/docs/VALIDATION.md'):
             self.assertIn(token, notes)
 
     def test_current_document_links_resolve(self):
         paths = [ROOT / n for n in ('README.md', 'README_RU.md', 'docs/BUILDING.md',
-                 'docs/VALIDATION.md', 'THIRD_PARTY_NOTICES.md', 'SECURITY.md')]
+                 'docs/VALIDATION.md', 'docs/COMPATIBILITY_7_4_1.md',
+                 'release/RELEASE-NOTES-0025-RC1.md',
+                 'THIRD_PARTY_NOTICES.md', 'SECURITY.md')]
         for path in paths:
             for link in re.findall(r'\[[^]]+\]\(([^)]+)\)', path.read_text()):
                 if '://' not in link and not link.startswith('#'):

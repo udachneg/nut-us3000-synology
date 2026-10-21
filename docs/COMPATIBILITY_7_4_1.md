@@ -1,6 +1,8 @@
 # Release 0025 RC1: advisory DSM compatibility
 
 0025 RC1 is a prerelease with controlled-upgrade acceptance on DSM 7.2.2 Update 8.
+On 2026-10-21, current operation after manual package start was also checked on
+DSM 7.4.1-90080 Update 1. Startup during the DSM update failed; its cause is open.
 Stable release 0022 is unchanged. Do not update DSM merely because 0025 accepts
 its version; see the [validation record](VALIDATION.md).
 
@@ -18,7 +20,9 @@ its version; see the [validation record](VALIDATION.md).
 - The existing INFO publisher adds a separate English/Russian compatibility
   field. Exact SA6400 `7.2.2/72806 Update8` is labelled "environment previously
   exercised", not guaranteed protection. Other readable environments, including
-  statically inspected 7.4.1, are unverified (yellow). Unreadable/ambiguous metadata
+  7.4.1, are labelled unverified (yellow) by the unchanged 0025 binary. The later
+  limited live check is recorded here, not retroactively embedded in the SPK.
+  Unreadable/ambiguous metadata
   is "could not determine DSM environment" (yellow), never a startup prerequisite.
   VERSION is read as bounded data, never executed or copied into INFO.
   Installed DSM7.2.2 VERSION has no `unique` field: 0025 reads only productversion,
@@ -57,10 +61,17 @@ Compared with official 7.2.2 base72806:
 - The systemd daemon, libc, libsynopkg and upsmon differ. Their complete runtime
   behavior on the target NAS has **not** been verified by these static checks.
 
-No real DSM 7.4.1 boot, package installation, cgroup transaction, USB reconnect,
-full safe shutdown or power-return test has been performed. Existing 0021/0022
-evidence applies only to unchanged components and its documented environment.
-The old full safe-mode observer limitation is not retroactively closed.
+The host was upgraded to DSM 7.4.1 Update 1. A subsequent read-only check confirmed
+live UPS/DSM communication, RAM services and identities, helper/USB permissions,
+cgroup v1/name=systemd, the empty systemd219 queue response, persisted settings
+and effective firewall rules over more than ten minutes. The package needed
+a manual start after its first system-triggered start failed during the update.
+See the [dated validation record and error comparison](VALIDATION.md).
+
+Ordinary-reboot startup, fresh package installation, stop-hook cgroup
+transactions, USB reconnect, full safe shutdown and power return on 7.4.1 remain
+unverified. Existing 0021/0022 evidence applies only to unchanged components and
+its documented environment. The old safe-mode observer limitation remains open.
 
 0024 verification was limited to changed behavior: actual shell platform
 admission, the compiled native INFO publisher against local metadata fixtures,
@@ -75,7 +86,9 @@ shell admission and prior live lifecycle tests are not repeated.
 
 The pre-DSM installation gate below passed for 0025 on the documented host:
 upgrade 0022 → 0025, short read-only postflight and visual Package Center check.
-This does not complete the post-DSM gates or certify another installation.
+The bounded post-DSM read-only check also passed for current operation, with
+the failed update-time startup recorded separately. Neither certifies another
+installation or full lifecycle recovery.
 
 The coordinator must first install the audited candidate on current DSM 7.2.2,
 with a protected backup of 0022 SPK, package data and DSM UPS/firewall settings.

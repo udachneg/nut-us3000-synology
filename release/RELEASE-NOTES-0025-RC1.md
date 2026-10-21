@@ -1,6 +1,7 @@
 # NUT US3000 2.8.5-0025 RC1
 
 Предварительный релиз / Prerelease — 2026-10-20.
+Результаты проверки дополнены / Validation updated — 2026-10-21.
 
 ## Изменения / Changes
 
@@ -42,15 +43,29 @@ SA6400/epyc7002 with UGREEN US3000 USB 2b89:ffff/DC600. UPS/DSM connection,
 five-minute delay, firewall and the package card were verified. NAS boot and
 unrelated containers were unchanged.
 
-**DSM 7.4.1 is not yet runtime-validated.** Offline firmware/ABI investigation
-and removing a version ban are not proof of live compatibility. The queue
-reader still requires its implemented systemd 219 contract.
+**21.10.2026: текущая работа на DSM 7.4.1-90080 Update 1 проверена после
+ручного запуска.** За более чем десять минут подтверждены связь ИБП с DSM,
+RAM-службы, права helper/USB, сохранность настроек и правила брандмауэра.
+Первый автоматический запуск во время обновления DSM завершился ошибкой
+стартового скрипта; причина не установлена. Обычный ручной запуск той же 0025
+прошёл без переустановки. Это не полная проверка совместимости или safe mode.
+
+**Current operation on DSM 7.4.1 Update 1 passed a read-only postflight after
+manual start.** The first system-triggered start during the DSM update failed
+with script error 272, unlike Container Manager's version-limit error 259.
+The cause remains unresolved. Ordinary-reboot startup and full safe-mode/power
+recovery on this DSM remain unverified. The queue reader still requires its
+implemented systemd 219 contract. The compatibility badge remains yellow in the
+unchanged SPK; the evidence update does not rebuild or replace release assets.
 Clean-install, USB reconnect and full safe-mode/power tests were not repeated
 for 0025. Prior evidence applies only to unchanged components and its documented
 environment. This RC is not a new full safe-mode acceptance.
 
-[Validation record](https://github.com/udachneg/nut-us3000-synology/blob/v2.8.5-0025-rc1/docs/VALIDATION.md)
-· [DSM compatibility details](https://github.com/udachneg/nut-us3000-synology/blob/v2.8.5-0025-rc1/docs/COMPATIBILITY_7_4_1.md)
+[Current validation record](https://github.com/udachneg/nut-us3000-synology/blob/main/docs/VALIDATION.md)
+· [Current DSM compatibility details](https://github.com/udachneg/nut-us3000-synology/blob/main/docs/COMPATIBILITY_7_4_1.md)
+
+The release tag retains the original source/document snapshot. Later validation
+updates are on main and in these release notes; the tag is not moved.
 
 ## Sources and checksums
 

@@ -1,7 +1,9 @@
 # NUT US3000 for Synology DSM
 
 > 0025 warns about unverified DSM versions instead of blocking startup by version.
-> This is not confirmation of DSM 7.4.1 compatibility or approval to upgrade DSM.
+> Current operation on DSM 7.4.1 Update 1 was checked on 2026-10-21 after a manual
+> package start. Automatic startup during the DSM update failed; ordinary reboot
+> and full safe-mode recovery on this DSM remain unverified.
 > See [compatibility evidence and limits](docs/COMPATIBILITY_7_4_1.md).
 
 [Русский](README_RU.md)
@@ -19,11 +21,12 @@ Previous stable: [2.8.5-0022](https://github.com/udachneg/nut-us3000-synology/re
 
 ## Tested compatibility
 
-Only this exact combination is validated:
+Evidence is limited to this hardware and the following DSM-specific scope:
 
 | Component | Validated value |
 | --- | --- |
 | DSM | Xpenology/Arc, DSM 7.2.2-72806 Update 8, model `SA6400` |
+| DSM post-update check | Same host, DSM 7.4.1-90080 Update 1: current operation after manual start; not full lifecycle acceptance |
 | Architecture | `epyc7002` / x86-64 |
 | UPS | UGREEN US3000, USB `2b89:ffff`, serial `DC600` |
 | NUT | `2.8.5`, `usbhid-ups`, subdriver `Arduino HID 0.22` |
@@ -32,6 +35,12 @@ Only this exact combination is validated:
 Official Synology NAS models, other DSM builds, other architectures and other
 UPS units are untested. A DSM update does not automatically inherit this
 compatibility claim.
+
+On 7.4.1 Update 1, more than ten minutes of read-only observation confirmed
+UPS/DSM communication, RAM processes, helper/USB permissions, saved settings and
+effective firewall rules. The first system-triggered start during the DSM update
+failed; the same 0025 then ran after a manual start, without reinstalling it.
+The startup cause is unresolved. See the [validation record](docs/VALIDATION.md).
 
 ## Safety and scope
 
