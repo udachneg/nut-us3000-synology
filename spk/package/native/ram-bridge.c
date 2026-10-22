@@ -23,6 +23,27 @@
 #endif
 
 enum command { CMD_START, CMD_RETRY, CMD_STOP, CMD_HOOK_STOP };
+static long long milliseconds(void);
+static int (*diagnostic_binding)(enum nutram_phase);
+static const char *diagnostic_stage;
+static long long diagnostic_begun;
+static void bridge_diagnostic(const char *event,int rc) {
+    int saved=errno;
+    long long now=milliseconds();
+    (void)fprintf(stderr,"NUT_START_DIAG layer=bridge stage=%s event=%s rc=%d elapsed_ms=%lld\n",
+        diagnostic_stage,event,rc,now>=0 && diagnostic_begun>=0?now-diagnostic_begun:-1);
+    errno=saved;
+}
+/* Private synchronous callback only; no caller-selected code or new operation. */
+static int diagnostic_phase(enum nutram_phase phase) {
+    static const char *names[]={"prepare","ensure","audit","core","health","start",
+        "controller_stop","runtime_stop","quiescent","release","cleanup","safe_entry","usb_present"};
+    diagnostic_stage=(unsigned)phase<sizeof(names)/sizeof(names[0])?names[phase]:"unknown_phase";
+    bridge_diagnostic("begin",0);
+    int rc=diagnostic_binding(phase);
+    bridge_diagnostic("result",rc);
+    return rc;
+}
 static int exact_file(int fd, mode_t mode)
 {
     struct stat st;
@@ -221,27 +242,41 @@ int nutram_bridge_dispatch(int argc, char **argv, int (*phase)(enum nutram_phase
     else if (strcmp(argv[1], "ram-stop") == 0) command = CMD_STOP;
     else if (strcmp(argv[1], "ram-hook-stop") == 0) command = CMD_HOOK_STOP;
     else return 64;
-    if (!phase) return 1;
+    if(command==CMD_START) {
+        int saved=errno;
+        diagnostic_begun=milliseconds();diagnostic_stage="binding";errno=saved;
+        diagnostic_binding=phase;
+    }
+    if (!phase) goto done;
+    if(command==CMD_START) {phase=diagnostic_phase;diagnostic_stage="credentials";}
     if (geteuid() != 0 || setgroups(0, NULL) != 0 || setgid(0) != 0 ||
-        setuid(0) != 0 || getuid() != 0 || getgid() != 0) return 77;
+        setuid(0) != 0 || getuid() != 0 || getgid() != 0) {rc=77;goto done;}
+    if(command==CMD_START)diagnostic_stage="environment";
     if (clearenv() != 0 || setenv("PATH", "/usr/sbin:/usr/bin:/sbin:/bin", 1) != 0 ||
-        setenv("LC_ALL", "C", 1) != 0 || chdir("/") != 0) return 1;
+        setenv("LC_ALL", "C", 1) != 0 || chdir("/") != 0) goto done;
     umask(077);
+    if(command==CMD_START)diagnostic_stage="bootstrap";
     dir = bootstrap();
     if (dir < 0) goto done;
     if (command != CMD_RETRY) {
+        if(command==CMD_START)diagnostic_stage="hook_lock";
         hook = open_lock(dir, "hooks.lock");
         if (hook < 0 || lock_fd(hook) != 0) goto done;
     }
+    if(command==CMD_START)diagnostic_stage="runtime_lock";
     runtime = open_lock(dir, "runtime.lock");
-    if (runtime < 0 || lock_fd(runtime) != 0 || state_read(dir, &state) != 0) goto done;
+    if (runtime < 0 || lock_fd(runtime) != 0) goto done;
+    if(command==CMD_START)diagnostic_stage="state_read";
+    if (state_read(dir, &state) != 0) goto done;
     if (state == 'T') {
         if (command != CMD_START) { rc = 0; goto done; }
+        diagnostic_stage="payload_create";
         if (payload_create(dir) != 0) goto done;
         state = 'X';
     }
     /* A disabled retry must not resurrect retired code or act during stop drain. */
     if (command == CMD_RETRY && (state == 'X' || state == 'P')) { rc = 0; goto done; }
+    if(command==CMD_START)diagnostic_stage="payload_check";
     if (payload_check(dir) != 0) goto done;
     if (command == CMD_RETRY) {
         rc = state == 'X' ? 0 : recover(dir, state, phase);
@@ -272,5 +307,6 @@ done:
     if (runtime >= 0) close(runtime);
     if (hook >= 0) close(hook);
     if (dir >= 0) close(dir);
+    if(command==CMD_START)bridge_diagnostic("complete",rc);
     return rc;
 }

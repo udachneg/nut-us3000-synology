@@ -2,15 +2,42 @@
 set -u
 
 [ $# -eq 1 ] || exit 64
+# Only fixed labels and numeric status enter the existing package journal.
+# Keep the original exit status even when diagnostics cannot be written.
+nutus3000_start_finish() {
+    nutus3000_diag_exit=$1
+    printf 'NUT_START_DIAG layer=hook stage=%s operation_rc=%s rc=%s\n' \
+        "$nutus3000_diag_stage" "$nutus3000_diag_rc" "$nutus3000_diag_exit" >&2 || :
+    if [ "$nutus3000_diag_loaded" -eq 1 ]; then
+        nutus3000_description_finish "$nutus3000_diag_exit" "$nutus3000_description_state"
+    fi
+    trap - EXIT
+    exit "$nutus3000_diag_exit"
+}
+nutus3000_start_step() {
+    nutus3000_diag_stage=$1
+    shift
+    "$@"
+    nutus3000_diag_rc=$?
+    return "$nutus3000_diag_rc"
+}
+if [ "$1" = start ]; then
+    nutus3000_diag_stage=package_environment
+    nutus3000_diag_rc=1
+    nutus3000_diag_loaded=0
+    nutus3000_description_state=error
+    trap 'nutus3000_start_finish "$?"' EXIT
+fi
 [ -n "${SYNOPKG_PKGDEST:-}" ] || exit 1
 nutus3000_control_library=$SYNOPKG_PKGDEST/share/nut-us3000/lib.sh
 nutus3000_hostctl=$SYNOPKG_PKGDEST/libexec/nut/nut-us3000-hostctl
 [ -f "$nutus3000_control_library" ] && [ ! -L "$nutus3000_control_library" ] || exit 1
 [ -f "$nutus3000_hostctl" ] && [ ! -L "$nutus3000_hostctl" ] && [ -x "$nutus3000_hostctl" ] || exit 1
 . "$nutus3000_control_library" || exit 1
+if [ "$1" = start ]; then nutus3000_diag_loaded=1; fi
 
 case $1 in
-    start|stop)
+    stop)
         nutus3000_description_state=error
         trap 'nutus3000_description_finish "$?" "$nutus3000_description_state"' EXIT
         ;;
@@ -19,12 +46,14 @@ esac
 case $1 in
     start)
         nutus3000_description_publish pending
-        nutus3000_init || exit 1
-        nutus3000_validate_platform || exit 1
-        nutus3000_validate_config || exit 1
-        nutus3000_prepare_run || exit 1
+        nutus3000_start_step init nutus3000_init || exit 1
+        nutus3000_start_step validate_platform nutus3000_validate_platform || exit 1
+        nutus3000_start_step validate_config nutus3000_validate_config || exit 1
+        nutus3000_start_step prepare_run nutus3000_prepare_run || exit 1
+        nutus3000_diag_stage=ram_start
         nutus3000_ram_result=$("$nutus3000_hostctl" ram-start)
         nutus3000_start_rc=$?
+        nutus3000_diag_rc=$nutus3000_start_rc
         if [ "$nutus3000_start_rc" -eq 0 ] && [ "$nutus3000_ram_result" = RAM_STATE=HEALTHY ]; then
             nutus3000_first_delay=300
             nutus3000_description_state=healthy
@@ -34,7 +63,10 @@ case $1 in
             nutus3000_description_state=degraded
             nutus3000_health_state=DEGRADED_1
         elif [ "$nutus3000_start_rc" -eq 75 ] && [ "$nutus3000_ram_result" = RAM_STATE=UNAVAILABLE ]; then
-            nutus3000_first_delay=$(nutus3000_first_delay_after_unavailable) || exit 1
+            nutus3000_diag_stage=first_delay
+            nutus3000_first_delay=$(nutus3000_first_delay_after_unavailable)
+            nutus3000_diag_rc=$?
+            [ "$nutus3000_diag_rc" -eq 0 ] || exit 1
             nutus3000_description_state=unavailable
             nutus3000_health_state=UNAVAILABLE
             if [ "$nutus3000_first_delay" -gt 0 ]; then
@@ -43,9 +75,10 @@ case $1 in
         else
             exit 1
         fi
-        nutus3000_publish_controller_state "$nutus3000_health_state" || exit 1
-        if nutus3000_controller_status; then exit 0; fi
-        if nutus3000_controller_start "$nutus3000_first_delay"; then
+        nutus3000_start_step publish_controller_state nutus3000_publish_controller_state "$nutus3000_health_state" || exit 1
+        if nutus3000_controller_status; then nutus3000_diag_stage=complete; exit 0; fi
+        if nutus3000_start_step controller_start nutus3000_controller_start "$nutus3000_first_delay"; then
+            nutus3000_diag_stage=complete
             exit 0
         fi
         "$nutus3000_hostctl" ram-stop >/dev/null 2>&1 || :
