@@ -1,9 +1,8 @@
 # NUT US3000 for Synology DSM
 
-> 0025 warns about unverified DSM versions instead of blocking startup by version.
-> Current operation on DSM 7.4.1 Update 1 was checked on 2026-10-21 after a manual
-> package start. Automatic startup during the DSM update failed; ordinary reboot
-> and full safe-mode recovery on this DSM remain unverified.
+> 0028 passed one complete safe-mode → power return → automatic reboot →
+> automatic NUT startup cycle on DSM 7.4.1 Update 1 on 2026-10-23.
+> Unknown DSM versions remain advisory, not a version-based startup ban.
 > See [compatibility evidence and limits](docs/COMPATIBILITY_7_4_1.md).
 
 [Русский](README_RU.md)
@@ -12,11 +11,11 @@ An unofficial native Synology DSM package that connects one UGREEN US3000 UPS
 directly over USB and exposes it to DSM through a host-local NUT 2.8.5 server.
 No runtime container is used on the NAS.
 
-Current build: **[2.8.5-0025 RC1](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0025-rc1)**.
-Controlled upgrade from 0022, UPS/DSM connection and the package card were
-verified on the documented host. This release uses exactly that installed SPK,
-without rebuilding for publication. Clean install and full safe-mode were not
-repeated for 0025. See [validation scope and limits](docs/VALIDATION.md).
+Current stable build: **[2.8.5-0028](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0028)**.
+Controlled upgrade from 0027 and the complete power-recovery cycle passed on
+the documented host. Publication reuses the tested SPK without rebuilding.
+If this exact 0028 is installed, no reinstall is needed.
+See [validation scope and limits](docs/VALIDATION.md).
 Previous stable: [2.8.5-0022](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0022).
 
 ## Tested compatibility
@@ -25,8 +24,8 @@ Evidence is limited to this hardware and the following DSM-specific scope:
 
 | Component | Validated value |
 | --- | --- |
-| DSM | Xpenology/Arc, DSM 7.2.2-72806 Update 8, model `SA6400` |
-| DSM post-update check | Same host, DSM 7.4.1-90080 Update 1: current operation after manual start; not full lifecycle acceptance |
+| DSM — current 0028 | Xpenology/Arc, DSM 7.4.1-90080 Update 1, model `SA6400`: upgrade and full power-recovery cycle |
+| Historical environment | Same host, DSM 7.2.2-72806 Update 8: earlier releases; not a new 0028 test |
 | Architecture | `epyc7002` / x86-64 |
 | UPS | UGREEN US3000, USB `2b89:ffff`, serial `DC600` |
 | NUT | `2.8.5`, `usbhid-ups`, subdriver `Arduino HID 0.22` |
@@ -36,11 +35,11 @@ Official Synology NAS models, other DSM builds, other architectures and other
 UPS units are untested. A DSM update does not automatically inherit this
 compatibility claim.
 
-On 7.4.1 Update 1, more than ten minutes of read-only observation confirmed
-UPS/DSM communication, RAM processes, helper/USB permissions, saved settings and
-effective firewall rules. The first system-triggered start during the DSM update
-failed; the same 0025 then ran after a manual start, without reinstalling it.
-The startup cause is unresolved. See the [validation record](docs/VALIDATION.md).
+On the tested host, 0028 recovered without manual NUT start or manual NAS reboot.
+The startup diagnostics and twenty-second convergence windows are retained;
+well-formed incomplete UPS data is retried only during startup, never accepted
+as ready. One successful cycle is not a guarantee for every future boot.
+See the [dated test report](docs/SAFE_MODE_0028.md).
 
 ## Safety and scope
 
@@ -60,20 +59,20 @@ The startup cause is unresolved. See the [validation record](docs/VALIDATION.md)
 
 ## Download and verify
 
-Download these two files from **[release 0025 RC1](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0025-rc1)**:
+Download these two files from **[release 0028](https://github.com/udachneg/nut-us3000-synology/releases/tag/v2.8.5-0028)**:
 
-- `nut-us3000_epyc7002-7.2_2.8.5-0025.spk`
-- `nut-us3000_epyc7002-7.2_2.8.5-0025.spk.sha256`
+- `nut-us3000_epyc7002-7.2_2.8.5-0028.spk`
+- `nut-us3000_epyc7002-7.2_2.8.5-0028.spk.sha256`
 
 Verify the SPK SHA-256 on your computer before installation. For example, on
 macOS or Linux:
 
 ```console
-shasum -a 256 nut-us3000_epyc7002-7.2_2.8.5-0025.spk
+shasum -a 256 nut-us3000_epyc7002-7.2_2.8.5-0028.spk
 ```
 
 The result must exactly match the published `.sha256` file.
-This build's SHA-256: `e89d90f2c2efb1742077887c4ab5f6aa1caa7827936d0c3a0623745d0ac8e436`.
+This build's SHA-256: `dca870d0b94bc1ebacfbb395788a00539af1e618e4c33cd2e32d2918b61d4452`.
 The SPK is not signed with a Synology certificate. A checksum verifies integrity,
 not trust in the download source. Read the warnings and license and accept only
 if you agree.

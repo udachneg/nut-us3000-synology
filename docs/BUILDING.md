@@ -1,7 +1,7 @@
 # Reproducible build
 
 This document describes the developer build path for NUT US3000
-`2.8.5-0025`. It is not part of the ordinary DSM installation flow.
+`2.8.5-0028`. It is not part of the ordinary DSM installation flow.
 
 ## Pinned inputs
 
@@ -14,11 +14,11 @@ This document describes the developer build path for NUT US3000
   `5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85`
 - target: `epyc7002`, DSM toolchain `7.2`
 
-Verify the package source tree against `release/PACKAGE-SOURCE-0025.sha256`
-from the checkout root using `shasum -a 256 -c release/PACKAGE-SOURCE-0025.sha256`.
+Verify the package source tree against `release/PACKAGE-SOURCE-0028.sha256`
+from the checkout root using `shasum -a 256 -c release/PACKAGE-SOURCE-0028.sha256`.
 Every distributed `spk/` file is byte-identical to the build-time snapshot.
-Publication reuses the audited and installed 0025 binary; no package source or
-SPK bytes are changed for the RC release. A new build is not required merely
+Publication reuses the audited and installed 0028 binary; no package source or
+SPK bytes are changed for the final release. A new build is not required merely
 to publish that artifact.
 
 The NUT detached signature and release keyring are tracked under
@@ -35,24 +35,11 @@ build volumes are fetched locally and are not redistributed.
 
 ## Publication checks
 
-The following targeted checks validate current public source closure and docs;
-they require no downloaded SPK and do not rerun VM/NAS lifecycle tests.
-The remaining asset tests in `test_publication_0022.py` intentionally validate
-historical 0022 assets in `artifacts/`; do not put 0025 assets there to run those
-historical checks. Historical 0016 tests are documented separately in
-`tests/historical_0016/README.md`. Verify 0025 downloads using its checksum file
-as described below.
-
-From this checkout:
-
-```console
-python3 -m unittest \
-  tests.test_publication_0022.Publication0022Test.test_complete_spk_source_matches_build_snapshot \
-  tests.test_publication_0022.Publication0022Test.test_source_manifest_is_exactly_the_git_distributed_source_set \
-  tests.test_publication_0022.Publication0022Test.test_instructions_and_completed_gate \
-  tests.test_publication_0022.Publication0022Test.test_current_document_links_resolve \
-  tests.test_publication_0022.Publication0022Test.test_public_index_has_no_private_paths_or_artifacts -v
-```
+Verify the current source manifest and release asset checksums. Historical
+publication tests pin older releases; do not feed 0028 assets into those tests.
+For finalization of 0028, existing build, targeted test and live gate results
+were reused; no rebuild or test repetition was performed. See
+[validation](VALIDATION.md).
 
 ## Fetch and verify redistributable sources
 
@@ -69,7 +56,7 @@ pinned NUT keyring before it publishes either source archive.
 Use a new Docker volume name for every bootstrap:
 
 ```console
-CACHE_NAME=nut-us3000-public-0025-build-base
+CACHE_NAME=nut-us3000-public-0028-build-base
 /bin/sh spk/scripts/prepare-build-env.sh "$PROJECT_ROOT" "$CACHE_NAME"
 ```
 
@@ -79,12 +66,16 @@ checkout into a native volume and bootstraps only
 `toolchain/syno-epyc7002-7.2`. Existing images, volumes and caches are never
 deleted automatically.
 
-## Run two offline release builds
+## Developer rebuild procedure (not required for installation)
+
+The wrapper below performs two offline builds for a fresh developer rebuild.
+It was not run during finalization. The 0028 candidate used one offline build
+and audit with comparison to the existing 0027 manifest, as recorded in validation.
 
 Create an empty canonical output directory:
 
 ```console
-OUTPUT_DIR=$(mktemp -d /tmp/nut-us3000-public-0025-output.XXXXXX)
+OUTPUT_DIR=$(mktemp -d /tmp/nut-us3000-public-0028-output.XXXXXX)
 /bin/sh spk/scripts/build-release.sh "$PROJECT_ROOT" "$CACHE_NAME" "$OUTPUT_DIR"
 ```
 
@@ -92,10 +83,10 @@ Both package builds and all inspector runs use `--network none`. The wrapper
 creates two new volumes from the prepared base, compares normalized manifests
 byte-for-byte, audits the canonical SPK and writes:
 
-- `nut-us3000_epyc7002-7.2_2.8.5-0025.spk`;
+- `nut-us3000_epyc7002-7.2_2.8.5-0028.spk`;
 - its `.sha256` file;
-- `normalized-manifest-0025.sha256`;
-- `BUILD-PROVENANCE-0025.txt`.
+- `normalized-manifest-0028.sha256`;
+- `BUILD-PROVENANCE-0028.txt`.
 
 Expected final markers include:
 
@@ -104,7 +95,7 @@ BUILD_A=PASS network=none
 BUILD_B=PASS network=none
 NORMALIZED_REBUILD_MATCH=YES
 SPK_AUDIT_COMPLETE
-RELEASE_BUILD_0025_COMPLETE
+RELEASE_BUILD_0028_COMPLETE
 ```
 
 The build volumes are retained for audit or diagnosis. Remove them only after
@@ -113,21 +104,21 @@ reviewing their exact names and deciding that the evidence is no longer needed.
 ## Release boundary
 
 The SPK is distributed only as a GitHub Release asset and is not committed to
-Git history. A public RC must pass the documented ordinary-user installation
-and read-only DSM postflight before the same SPK bytes can be promoted to the
-final release.
+Git history. Release acceptance is recorded per version in VALIDATION.md. For 0028 the
+approved scope was controlled upgrade and a complete power-recovery cycle;
+clean installation was not repeated. The final release uses those exact bytes.
 
 ## Published asset checks
 
 Download all assets into one directory and run:
 
 ```console
-shasum -a 256 -c SHA256SUMS-0025.txt
+shasum -a 256 -c SHA256SUMS-0028.txt
 ```
 
 The normalized manifest itself is supplied as `normalized-manifest.json`, together
-with `normalized-manifest-0025.sha256`. The existing build wrapper emits its hash;
-the publication also retains the audited manifest bytes from the two-build run.
+with `normalized-manifest-0028.sha256`. The existing build wrapper emits its hash;
+the publication retains the audited 0028 candidate manifest bytes.
 The source closure is versioned in Git; the complete tagged GitHub source archive
 plus the exact NUT/libusb source archives constitute the distributed source inputs.
 

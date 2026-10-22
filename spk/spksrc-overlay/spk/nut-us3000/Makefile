@@ -1,6 +1,6 @@
 SPK_NAME = nut-us3000
 SPK_VERS = 2.8.5
-SPK_REV = 0027
+SPK_REV = 0028
 SPK_ICON = src/icon-256.png
 
 DEPENDS = cross/nut

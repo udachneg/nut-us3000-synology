@@ -1,93 +1,47 @@
-# Validation status — 2.8.5-0025 RC1
+# Validation status — 2.8.5-0028
 
-Status: `RC_RUNTIME_CHECKED_DSM741_STARTUP_OPEN`, 2026-10-21.
-Earlier status: `RC_TESTED_UPGRADE`, 2026-10-20. Controlled **0022 → 0025** upgrade,
-UPS/DSM connection and the package card passed on the tested host. The published
-SPK is the same binary installed during that gate, with no publication rebuild.
+**FINAL — one full safe-mode/power-return cycle passed**, 2026-10-23.
+Publication reuses the tested SPK without rebuilding or repeating tests.
 
-Artifact: `nut-us3000_epyc7002-7.2_2.8.5-0025.spk`
-SHA-256: `e89d90f2c2efb1742077887c4ab5f6aa1caa7827936d0c3a0623745d0ac8e436`
+Artifact: `nut-us3000_epyc7002-7.2_2.8.5-0028.spk`
 
-## Tested environment
+SHA-256: `dca870d0b94bc1ebacfbb395788a00539af1e618e4c33cd2e32d2918b61d4452`
 
-Xpenology/Arc DSM 7.2.2-72806 **Update 8**, SA6400, epyc7002/x86-64;
-UGREEN US3000 USB 2b89:ffff, serial DC600; NUT 2.8.5 / Arduino HID 0.22;
-libusb 1.0.29. On the same host, a read-only post-update check on
-DSM **7.4.1-90080 Update 1**, Linux 5.10.55+, systemd 219 was completed on
-2026-10-21 with the limits below. Other DSM versions, official Synology hardware
-and other UPS devices are not covered by this acceptance.
+## Environment and existing evidence
 
-## Current evidence
+Xpenology/Arc SA6400, epyc7002/x86-64, DSM 7.4.1-90080 Update 1,
+Linux 5.10.55+, systemd 219; UGREEN US3000 USB 2b89:ffff;
+NUT 2.8.5, Arduino HID 0.22, libusb 1.0.29.
 
-| Check | Result and scope |
+| Check | Result reused for publication |
 | --- | --- |
-| Advisory DSM policy | Actual shell gate tests passed for known/unknown/unreadable metadata and incompatible platform rejection in 0024. The shell is byte-identical in 0025, so those tests were not repeated. |
-| Native package-card publisher | Five affected tests passed for captured VERSION without `unique`, bounded uname model detection, alternate/missing/ambiguous identity, unsafe metadata and independent state/settings text. |
-| Source closure and documentation | Three targeted checks passed; package sources match `PACKAGE-SOURCE-0025.sha256`. |
-| Offline build and artifact audit | Two builds, both SPK audits and normalized comparison passed. Inputs remained unchanged. Relative to 0024, only package version and the presentation helper binary changed. |
-| Independent code review | The 0024 advisory change and 0025 model-source correction received ACCEPT with no findings. This is code evidence, not a live DSM 7.4.1 acceptance. |
-| Controlled 0022 → 0025 upgrade | All package hooks and installation returned 0; package running. Protected rollback/configuration backup was verified first. |
-| Read-only postflight | Both local endpoints reported online state, controller HEALTHY, RAM services active, DSM upsmon connected, helper permissions/audit passed. Package configuration, DSM UPS/firewall settings, NAS boot ID and unrelated container start times were unchanged. |
-| Package Center card | Installed version 2.8.5-0025 and Running visible; connection, previously exercised environment, five-minute DSM setup and firewall badges green, with a fresh observation timestamp. |
+| Partial-data regression | Six targeted methods passed: missing fields on both endpoints, WAIT-to-complete, persistent partial data, fatal mixed cases, strict quiet HEALTH and closed stderr. Real C runtime; external operations/time replaced. |
+| Diagnostics | Eight targeted methods passed; bounded diagnostics, missing_mask contains field bits, not values. |
+| Independent review | Muse ACCEPT, no findings. Source/tests and sanitized local evidence, not live NAS certification. |
+| Build and audit | One offline 0028 build and SPK audit passed; input snapshots match. Relative to 0027 only version and native helper hash differ in normalized manifests. |
+| Controlled 0027 → 0028 upgrade | Install/hooks returned 0; both endpoints online, DSM connected, HEALTHY. Rollback retained; configuration/firewall/timer, NAS boot and unrelated containers unchanged. |
+| Full safe-mode cycle | PASS: data volumes unmounted, RAM pair survived, battery then mains observed, automatic NAS reboot and NUT start rc0. No manual recovery. |
+| Postflight | Both endpoints online, DSM connected, audit 0, HEALTHY; three volumes writable, all 31 baseline containers running with baseline health restored. Settings hashes matched after restoring five minutes. |
+| Cleanup | Temporary observer/unit/upload removed, local receiver stopped. Backups and private evidence retained. |
 
-The pre-install check caught 0024's assumption that installed DSM VERSION
-contains `unique`. It does not on the tested NAS; 0024 was not installed.
-0025 obtains the model from fixed `/bin/uname -a` and retains advisory handling.
+[Sanitized test report](SAFE_MODE_0028.md) · [Change contract](STARTUP_PARTIAL_DATA_0028.md).
 
-## DSM 7.4.1 Update 1: current operation checked, startup issue open
+## Limits and history
 
-Read-only observation ran on 2026-10-21 from 16:41:57 to 16:52:02 Moscow
-(UTC+3), with a final root status check at 16:52:45. Eight additional discrete
-samples confirmed both endpoints and unchanged driver/server PIDs. No package
-or NAS restart, installation, repair, USB/power test or configuration change
-was performed. This is not continuous monitoring or proof against brief gaps.
+One successful cycle is not a guarantee for all boots. This boot had
+**missing_mask=0**: partial-data retry was tested locally, not exercised live.
 
-| Check | Result |
-| --- | --- |
-| Package and controller | Root package status running; controller HEALTHY. Wrapper active/exited as designed. |
-| RAM runtime | Both units active/running since the previous evening's manual start; exact RAM executable paths and working directories, package UID/GID and cgroup v1/name=systemd identities confirmed; /run is tmpfs. |
-| UPS and DSM | Both local endpoints returned OL DISCHRG for the expected UPS; DSM upsmon connection established. DSM UI showed US3000 connected, charge 100%, alias 10.255.255.1 and five-minute delay. OL DISCHRG and runtime 65535 are not autonomy measurements. |
-| Helper and USB | Helper audit passed; mode/ownership and selected USB device access preserved. Installed helper and library hashes matched 0025. |
-| Settings and firewall | Package configuration, DSM UPS settings and saved firewall profiles matched pre-upgrade backup checksums. Local listeners, exact transient guard and effective persistent deny order checked; no external connection probe. |
-| systemd queue | Version 219; empty list-jobs response with rc1 matched the implemented DSM contract. No stop-hook transaction was exercised. |
-| Package card | Running 0025, green connection/settings/firewall; timestamp advanced naturally. Compatibility remains yellow because the unchanged binary's previously-exercised-environment label covers only 7.2.2 Update 8. |
+Clean install, keep/delete-data uninstall, USB reconnect and other completed
+tests were not repeated for 0028. [0022 evidence](VALIDATION_0022.md) retains its
+original scope. The [0025 record](VALIDATION_0025.md) preserves its failed
+update-time startup; the exact original cause was not captured. In 0027,
+data_missing_field failed after CORE passed; the missing fields/raw response
+were not captured. Do not assign that cause to every historical failure.
 
-### Startup during the DSM update did not pass
+Other DSM builds, official Synology hardware and other UPS units are untested.
+Unknown DSM remains advisory; the systemd 219 contract and independent safety
+checks still apply. The unchanged embedded compatibility matrix can show yellow
+on 7.4.1; documentation records new evidence without recoloring the binary.
 
-On 2026-10-20 at 20:57:07–15 Moscow, the system-triggered NUT start script ran
-but returned 1. DSM recorded error **272** (Failed to run script, script=[start])
-and then stopped the package. At 21:05:53–21:06:09, the user's ordinary manual
-start succeeded on the same 0025, without a package update or reinstall.
-
-This coincided with DSM's package migration, but was not the same recorded
-failure as Container Manager: DSM rejected its old version with **259 /
-version_limit**, then upgraded it before successful startup. NUT was not rejected
-by that version gate; its RAM driver/server actually started. The initial missing
-driver socket and subsequent Interrupted system call do not establish the cause
-or prove an external killall. The saved logs do not identify the failing internal
-check. Do not label the NUT failure either normal mandatory repair or proven
-binary incompatibility.
-
-Current operation after manual start passed; autonomous startup during the DSM
-update did not. Startup after an ordinary reboot of 7.4.1 remains unverified.
-
-## Inherited evidence and limits
-
-The [0022 validation record](VALIDATION_0022.md) preserves the earlier keep-data
-reinstall, public-guide clean install and inherited RAM lifecycle evidence.
-Driver/server/controller/hooks and the operational RAM/USB/firewall logic were
-not changed for 0025. Those successful gates were not repeated for this release.
-
-No new full safe-mode or power-return test was run for 0025. The earlier 0021
-observer did **not** produce a formal PASS, although automatic recovery was
-observed; that limitation remains in the historical record. Successful UPS
-communication is not proof of the complete shutdown/recovery sequence.
-
-DSM 7.4.1 now has the bounded live evidence above in addition to offline
-firmware/ABI investigation. Fresh package installation, ordinary-reboot startup,
-USB reconnect, full safe shutdown and power-return recovery on it remain unverified.
-See [DSM compatibility policy and evidence](COMPATIBILITY_7_4_1.md).
-
-0025 RC1 is a prerelease. It has controlled-upgrade acceptance, not a new
-ordinary-user clean-install acceptance from the public RC. Private logs,
-credentials, host backups and infrastructure paths are not distributed.
+Package sources are bound by release/PACKAGE-SOURCE-0028.sha256.
+Raw private NAS logs, credentials, backups and infrastructure paths are excluded.

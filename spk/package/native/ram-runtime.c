@@ -17,15 +17,16 @@ static const char *diag_stage="preflight";
 static const char *diag_operation="none";
 static int diag_transport=-1,diag_child=-1;
 static long long diag_begun;
-static void diagnostic(const char *reason,int rc) {
+static void diagnostic_fields(const char *reason,int rc,unsigned missing_mask) {
     if (!start_diagnostics) return;
     int saved=errno;
     long long now=monotonic_ms();
-    (void)fprintf(stderr,"NUT_START_DIAG layer=runtime stage=%s reason=%s op=%s transport=%d child=%d rc=%d elapsed_ms=%lld\n",
+    (void)fprintf(stderr,"NUT_START_DIAG layer=runtime stage=%s reason=%s op=%s transport=%d child=%d rc=%d elapsed_ms=%lld missing_mask=%u\n",
         diag_stage,reason,diag_operation,diag_transport,diag_child,rc,
-        now>=0 && diag_begun>=0?now-diag_begun:-1);
+        now>=0 && diag_begun>=0?now-diag_begun:-1,missing_mask);
     errno=saved;
 }
+static void diagnostic(const char *reason,int rc) { diagnostic_fields(reason,rc,0); }
 static int diagnostic_fail(const char *reason,int rc) { diagnostic(reason,rc);return rc; }
 static void diagnostic_stage(const char *stage) {
     diag_stage=stage;diag_operation="none";diag_transport=-1;diag_child=-1;
@@ -66,7 +67,7 @@ static int power_status(char *s) {
     return unavailable || (!online && !battery) ? 1 : 0;
 }
 
-static int nut_data(struct nutram_exec_result *r) {
+static int nut_data(struct nutram_exec_result *r,int starting) {
     static const char *keys[]={"driver.name","device.mfr","device.model",
         "ups.vendorid","ups.productid","ups.status"};
     static const char *expected[]={"nutus3000-hid","UGREEN","US3000","2b89","ffff"};
@@ -83,9 +84,19 @@ static int nut_data(struct nutram_exec_result *r) {
         }
         line=end+1;
     }
-    for (unsigned i=0;i<6;i++) if (!values[i]) return diagnostic_fail("data_missing_field",2);
-    for (unsigned i=0;i<5;i++) if (strcmp(values[i],expected[i])) return diagnostic_fail("data_identity",2);
-    int rc=power_status(values[5]);
+    /* A connected upsd can expose WAIT/partial data before its initial dump
+     * completes. Never let missing fields conceal an already wrong identity. */
+    for (unsigned i=0;i<5;i++)
+        if (values[i] && strcmp(values[i],expected[i])) return diagnostic_fail("data_identity",2);
+    int rc=values[5]?power_status(values[5]):1;
+    if (rc==2) return diagnostic_fail("power_status",2);
+    unsigned missing=0;
+    for (unsigned i=0;i<6;i++) if (!values[i]) missing|=1u<<i;
+    if (missing) {
+        int result=starting?3:2;
+        diagnostic_fields("data_missing_field",result,missing);
+        return result; /* Only the existing START deadline authorizes retry. */
+    }
     if(rc)diagnostic("power_status",rc);
     return rc;
 }
@@ -106,7 +117,7 @@ static int health_until(long long deadline) {
         /* Unknown transport/loader/protocol errors must not trigger destructive
          * recovery as though they proved a disconnected physical device. */
         if (transport!=NUTRAM_EXEC_OK) return 2;
-        if (r.exit_code==0) rc=nut_data(&r);
+        if (r.exit_code==0) rc=nut_data(&r,deadline!=0);
         else if (r.exit_code==1 && known_unavailable(&r)) rc=1;
         else if (deadline && r.exit_code==1 && !r.out_size &&
                  r.err_size==sizeof("Error: Connection failure: Connection refused\n")-1 &&

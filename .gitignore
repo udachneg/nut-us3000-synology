@@ -13,3 +13,4 @@ release/*
 !release/*.sha256
 !release/SHA256SUMS-0022.txt
 !release/SHA256SUMS-0025.txt
+!release/SHA256SUMS-0028.txt
