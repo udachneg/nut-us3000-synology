@@ -22,7 +22,7 @@ Controlled 0027 → 0028 upgrade and one full safe-mode → power return →
 automatic reboot → automatic NUT start passed on Xpenology/Arc SA6400,
 DSM 7.4.1-90080 Update 1, UGREEN US3000. No manual recovery.
 Settings and five-minute timer restored; volumes and baseline containers recovered.
-Targeted tests and independent Muse review passed before the build.
+Targeted tests and independent Muse review passed before publication.
 
 [Отчёт / Test report](https://github.com/udachneg/nut-us3000-synology/blob/v2.8.5-0028/docs/SAFE_MODE_0028.md)
 · [Validation scope](https://github.com/udachneg/nut-us3000-synology/blob/v2.8.5-0028/docs/VALIDATION.md)
