@@ -273,14 +273,14 @@ static int runtime_start(int (*remaining)(enum nutram_phase)) {
         if (observed_exec(op,0,&r)!=NUTRAM_EXEC_OK || r.exit_code) goto unwind;
     }
     /* Type=simple start completion precedes exec. Only this just-started pair
-     * gets a short convergence window; the strict preflight above is unchanged.
+     * gets a bounded convergence window; the strict preflight above is unchanged.
      * Every observation remains bounded and nothing becomes ready on timeout. */
     diagnostic_stage("core_wait");
     long long begun=monotonic_ms();
     if(begun<0){diagnostic("clock",1);goto unwind;}
     while(core()!=0) {
         long long now=monotonic_ms();
-        if(now<0 || now-begun>=3000){diagnostic(now<0?"clock":"core_deadline",1);goto unwind;}
+        if(now<0 || now-begun>=20000){diagnostic(now<0?"clock":"core_deadline",1);goto unwind;}
         struct timespec pause={0,50000000};
         if(nanosleep(&pause,NULL)){diagnostic("wait_interrupted",1);goto unwind;}
     }

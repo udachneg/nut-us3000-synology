@@ -63,13 +63,17 @@ int nutram_exec(enum nutram_operation op,struct nutram_exec_result *r) {
         scans++;
         if(!strcmp(fault,"inventory_exit")) {ticks+=1600;r->exit_code=7;}
         else if(!strcmp(fault,"inventory_mismatch")) {ticks+=1600;output(r,"SECRET_DO_NOT_LOG\n");}
+        else if((!strcmp(fault,"recover_after_two") && scans<=2) ||
+                ((!strcmp(fault,"recover_after_eleven") || !strcmp(fault,"slow_core_stale")) && scans<=11)) {
+            ticks+=1600;r->exit_code=7;
+        }
         else {ticks+=10;output(r,"server=42\ndriver=43\n");}
     } else if(op==NUTRAM_QUERY_LOCAL || op==NUTRAM_QUERY_ALIAS) {
         queries++;
         output(r,"driver.name: nutus3000-hid\ndevice.mfr: UGREEN\ndevice.model: US3000\nups.vendorid: 2b89\nups.productid: ffff\nups.status: OL DISCHRG\n");
         if(!strcmp(fault,"query_timeout"))return NUTRAM_EXEC_TIMEOUT;
         if(!strcmp(fault,"identity") || !strcmp(fault,"unwind"))output(r,"driver.name: SECRET_DO_NOT_LOG\ndevice.mfr: UGREEN\ndevice.model: US3000\nups.vendorid: 2b89\nups.productid: ffff\nups.status: OL\n");
-        if(!strcmp(fault,"unavailable")) {
+        if(!strcmp(fault,"unavailable") || !strcmp(fault,"slow_core_stale")) {
             r->out[0]=0;r->out_size=0;r->exit_code=1;
             strcpy(r->err,"Error: Data stale\n");r->err_size=strlen(r->err);
         }
@@ -94,7 +98,7 @@ int main(int argc,char **argv) {
 class RuntimeDiagnostics(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.tmp = tempfile.TemporaryDirectory(prefix="nut-0026-runtime-")
+        cls.tmp = tempfile.TemporaryDirectory(prefix="nut-0027-runtime-")
         cls.addClassCleanup(cls.tmp.cleanup)
         source = pathlib.Path(cls.tmp.name) / "fixture.c"
         source.write_text(HARNESS)
@@ -111,10 +115,29 @@ class RuntimeDiagnostics(unittest.TestCase):
 
     def test_core_window_records_original_cause_before_unwind(self):
         p = self.run_case("inventory_exit")
-        self.assertEqual(p.stdout, "rc=1 scans=2 queries=0 stops=2 elapsed=3250\n")
+        self.assertEqual(p.stdout, "rc=1 scans=13 queries=0 stops=2 elapsed=21400\n")
         self.assertIn("stage=core_wait reason=exec_exit op=core_inventory transport=0 child=7", p.stderr)
         self.assertIn("reason=core_deadline", p.stderr)
         self.assertLess(p.stderr.index("reason=core_deadline"), p.stderr.index("stage=unwind"))
+
+    def test_transient_core_can_recover_after_three_and_ten_seconds(self):
+        for case, expected in [
+            ("recover_after_two", "rc=0 scans=3 queries=2 stops=0 elapsed=3310\n"),
+            ("recover_after_eleven", "rc=0 scans=12 queries=2 stops=0 elapsed=18160\n"),
+        ]:
+            with self.subTest(case=case):
+                p = self.run_case(case)
+                self.assertEqual(p.stdout, expected)
+                self.assertIn("stage=core_wait reason=exec_exit", p.stderr)
+                self.assertIn("reason=complete", p.stderr)
+                self.assertNotIn("reason=core_deadline", p.stderr)
+                self.assertNotIn("stage=unwind", p.stderr)
+
+    def test_slow_core_does_not_consume_separate_data_budget(self):
+        p = self.run_case("slow_core_stale")
+        self.assertEqual(p.stdout, "rc=75 scans=12 queries=40 stops=2 elapsed=38160\n")
+        self.assertNotIn("reason=core_deadline", p.stderr)
+        self.assertIn("reason=data_deadline", p.stderr)
 
     def test_distinct_failures(self):
         for case, expected in [
